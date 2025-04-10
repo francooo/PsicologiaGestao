@@ -1,10 +1,48 @@
-import type { Express } from "express";
+import express, { type Express, type Request } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertAppointmentSchema, insertRoomSchema, insertPsychologistSchema, insertTransactionSchema, insertRoomBookingSchema, insertPermissionSchema, insertRolePermissionSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+// Configure multer for image upload
+const uploadDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage_config = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `profile-${uniqueSuffix}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage: storage_config,
+  limits: {
+    fileSize: 1024 * 1024 * 2, // 2MB max file size
+  },
+  fileFilter: function (req, file, cb) {
+    const filetypes = /jpeg|jpg|png|gif/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    
+    cb(new Error("Apenas imagens nos formatos JPEG, JPG, PNG e GIF são permitidas."));
+  },
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
@@ -716,6 +754,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate HttpServer instance
+  // User profile management route
+  app.post("/api/profile", upload.single("profileImageFile"), async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(400).json({ message: "User ID not found" });
+      }
+
+      // Get existing user data
+      const existingUser = await storage.getUser(userId);
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Process new data
+      const { fullName, email } = req.body;
+      const updateData: any = {};
+
+      // Only update fields provided
+      if (fullName) updateData.fullName = fullName;
+      if (email) updateData.email = email;
+
+      // Process profile image if uploaded
+      if (req.file) {
+        // If there's an existing profile image, remove it to save space
+        if (existingUser.profileImage) {
+          try {
+            const oldImagePath = path.join(process.cwd(), existingUser.profileImage);
+            if (fs.existsSync(oldImagePath)) {
+              fs.unlinkSync(oldImagePath);
+            }
+          } catch (err) {
+            console.error("Error deleting old profile image:", err);
+          }
+        }
+
+        // Save path to uploaded image
+        const imageUrl = `/uploads/${req.file.filename}`;
+        updateData.profileImage = imageUrl;
+      }
+
+      // Update user in database
+      const updatedUser = await storage.updateUser(userId, updateData);
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update user profile" });
+      }
+
+      // Return updated user data without sensitive info
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Error updating profile" });
+    }
+  });
+
+  // Serve uploaded images
+  app.use("/uploads", express.static(uploadDir));
+
   const httpServer = createServer(app);
   return httpServer;
 }
