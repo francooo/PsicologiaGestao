@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, date, time, decimal, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, date, time, decimal, timestamp, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // User & Auth related schemas
 export const users = pgTable("users", {
@@ -148,6 +149,93 @@ export const insertRolePermissionSchema = createInsertSchema(rolePermissions).pi
   role: true,
   permissionId: true,
 });
+
+// Define relations
+export const usersRelations = relations(users, ({ one, many }) => ({
+  psychologist: one(psychologists, {
+    fields: [users.id],
+    references: [psychologists.userId],
+  }),
+  transactions: many(transactions, {
+    relationName: "userTransactions",
+  }),
+}));
+
+export const psychologistsRelations = relations(psychologists, ({ one, many }) => ({
+  user: one(users, {
+    fields: [psychologists.userId],
+    references: [users.id],
+  }),
+  appointments: many(appointments, {
+    relationName: "psychologistAppointments",
+  }),
+  roomBookings: many(roomBookings, {
+    relationName: "psychologistRoomBookings",
+  }),
+}));
+
+export const roomsRelations = relations(rooms, ({ many }) => ({
+  appointments: many(appointments, {
+    relationName: "roomAppointments",
+  }),
+  bookings: many(roomBookings, {
+    relationName: "roomBookings",
+  }),
+}));
+
+export const appointmentsRelations = relations(appointments, ({ one, many }) => ({
+  psychologist: one(psychologists, {
+    fields: [appointments.psychologistId],
+    references: [psychologists.id],
+  }),
+  room: one(rooms, {
+    fields: [appointments.roomId],
+    references: [rooms.id],
+  }),
+  transactions: many(transactions, {
+    relationName: "appointmentTransactions",
+  }),
+}));
+
+export const transactionsRelations = relations(transactions, ({ one }) => ({
+  responsibleUser: one(users, {
+    fields: [transactions.responsibleId],
+    references: [users.id],
+    relationName: "userTransactions",
+  }),
+  appointment: one(appointments, {
+    fields: [transactions.relatedAppointmentId],
+    references: [appointments.id],
+    relationName: "appointmentTransactions",
+  }),
+}));
+
+export const roomBookingsRelations = relations(roomBookings, ({ one }) => ({
+  room: one(rooms, {
+    fields: [roomBookings.roomId],
+    references: [rooms.id],
+    relationName: "roomBookings",
+  }),
+  psychologist: one(psychologists, {
+    fields: [roomBookings.psychologistId],
+    references: [psychologists.id],
+    relationName: "psychologistRoomBookings",
+  }),
+}));
+
+export const permissionsRelations = relations(permissions, ({ many }) => ({
+  rolePermissions: many(rolePermissions, {
+    relationName: "permissionRoles",
+  }),
+}));
+
+export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
+  permission: one(permissions, {
+    fields: [rolePermissions.permissionId],
+    references: [permissions.id],
+    relationName: "permissionRoles",
+  }),
+}));
 
 // Export types
 export type User = typeof users.$inferSelect;

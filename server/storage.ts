@@ -10,8 +10,12 @@ import {
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db, pool } from "./db";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // User related methods
@@ -472,4 +476,393 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true
+    });
+    
+    // Inicialização adiada de dados padrão para evitar erros de tabela não existente
+    setTimeout(() => {
+      this.initDefaultData().catch(err => {
+        console.error("Erro ao inicializar dados padrão:", err);
+      });
+    }, 5000); // Aguarda 5 segundos para garantir que as tabelas foram criadas
+  }
+  
+  private async initDefaultData() {
+    // Check if permissions table is empty
+    const existingPermissions = await db.select().from(permissions);
+    
+    if (existingPermissions.length === 0) {
+      // Create default permissions
+      const defaultPermissions = [
+        { name: "dashboard_view", description: "View dashboard" },
+        { name: "appointments_view", description: "View appointments" },
+        { name: "appointments_manage", description: "Manage appointments" },
+        { name: "psychologists_view", description: "View psychologists" },
+        { name: "psychologists_manage", description: "Manage psychologists" },
+        { name: "rooms_view", description: "View rooms" },
+        { name: "rooms_manage", description: "Manage rooms" },
+        { name: "rooms_book", description: "Book rooms" },
+        { name: "financial_view", description: "View financial information" },
+        { name: "financial_manage", description: "Manage financial information" },
+        { name: "permissions_view", description: "View permissions" },
+        { name: "permissions_manage", description: "Manage permissions" }
+      ];
+      
+      for (const permission of defaultPermissions) {
+        await this.createPermission({
+          name: permission.name,
+          description: permission.description
+        });
+      }
+    }
+  }
+
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
+  }
+
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  // Psychologist methods
+  async getPsychologist(id: number): Promise<Psychologist | undefined> {
+    const [psychologist] = await db.select().from(psychologists).where(eq(psychologists.id, id));
+    return psychologist;
+  }
+
+  async getPsychologistByUserId(userId: number): Promise<Psychologist | undefined> {
+    const [psychologist] = await db.select().from(psychologists).where(eq(psychologists.userId, userId));
+    return psychologist;
+  }
+
+  async createPsychologist(psychologist: InsertPsychologist): Promise<Psychologist> {
+    const [newPsychologist] = await db.insert(psychologists).values(psychologist).returning();
+    return newPsychologist;
+  }
+
+  async updatePsychologist(id: number, psychologistData: Partial<Psychologist>): Promise<Psychologist | undefined> {
+    const [updatedPsychologist] = await db
+      .update(psychologists)
+      .set(psychologistData)
+      .where(eq(psychologists.id, id))
+      .returning();
+    return updatedPsychologist;
+  }
+
+  async deletePsychologist(id: number): Promise<boolean> {
+    const result = await db.delete(psychologists).where(eq(psychologists.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getAllPsychologists(): Promise<Psychologist[]> {
+    return await db.select().from(psychologists);
+  }
+
+  // Room methods
+  async getRoom(id: number): Promise<Room | undefined> {
+    const [room] = await db.select().from(rooms).where(eq(rooms.id, id));
+    return room;
+  }
+
+  async createRoom(room: InsertRoom): Promise<Room> {
+    const [newRoom] = await db.insert(rooms).values(room).returning();
+    return newRoom;
+  }
+
+  async updateRoom(id: number, roomData: Partial<Room>): Promise<Room | undefined> {
+    const [updatedRoom] = await db
+      .update(rooms)
+      .set(roomData)
+      .where(eq(rooms.id, id))
+      .returning();
+    return updatedRoom;
+  }
+
+  async deleteRoom(id: number): Promise<boolean> {
+    const result = await db.delete(rooms).where(eq(rooms.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getAllRooms(): Promise<Room[]> {
+    return await db.select().from(rooms);
+  }
+
+  // Appointment methods
+  async getAppointment(id: number): Promise<Appointment | undefined> {
+    const [appointment] = await db.select().from(appointments).where(eq(appointments.id, id));
+    return appointment;
+  }
+
+  async createAppointment(appointment: InsertAppointment): Promise<Appointment> {
+    const [newAppointment] = await db.insert(appointments).values(appointment).returning();
+    return newAppointment;
+  }
+
+  async updateAppointment(id: number, appointmentData: Partial<Appointment>): Promise<Appointment | undefined> {
+    const [updatedAppointment] = await db
+      .update(appointments)
+      .set(appointmentData)
+      .where(eq(appointments.id, id))
+      .returning();
+    return updatedAppointment;
+  }
+
+  async deleteAppointment(id: number): Promise<boolean> {
+    const result = await db.delete(appointments).where(eq(appointments.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getAllAppointments(): Promise<Appointment[]> {
+    return await db.select().from(appointments);
+  }
+
+  async getAppointmentsByPsychologistId(psychologistId: number): Promise<Appointment[]> {
+    return await db
+      .select()
+      .from(appointments)
+      .where(eq(appointments.psychologistId, psychologistId));
+  }
+
+  async getAppointmentsByDate(date: Date): Promise<Appointment[]> {
+    const formattedDate = date.toISOString().split('T')[0];
+    return await db
+      .select()
+      .from(appointments)
+      .where(eq(appointments.date, formattedDate));
+  }
+
+  async getAppointmentsByDateRange(startDate: Date, endDate: Date): Promise<Appointment[]> {
+    return await db
+      .select()
+      .from(appointments)
+      .where(and(
+        gte(appointments.date, startDate.toISOString().split('T')[0]),
+        lte(appointments.date, endDate.toISOString().split('T')[0])
+      ));
+  }
+
+  // Transaction methods
+  async getTransaction(id: number): Promise<Transaction | undefined> {
+    const [transaction] = await db.select().from(transactions).where(eq(transactions.id, id));
+    return transaction;
+  }
+
+  async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
+    const [newTransaction] = await db.insert(transactions).values(transaction).returning();
+    return newTransaction;
+  }
+
+  async updateTransaction(id: number, transactionData: Partial<Transaction>): Promise<Transaction | undefined> {
+    const [updatedTransaction] = await db
+      .update(transactions)
+      .set(transactionData)
+      .where(eq(transactions.id, id))
+      .returning();
+    return updatedTransaction;
+  }
+
+  async deleteTransaction(id: number): Promise<boolean> {
+    const result = await db.delete(transactions).where(eq(transactions.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getAllTransactions(): Promise<Transaction[]> {
+    return await db.select().from(transactions);
+  }
+
+  async getTransactionsByType(type: string): Promise<Transaction[]> {
+    return await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.type, type));
+  }
+
+  async getTransactionsByDateRange(startDate: Date, endDate: Date): Promise<Transaction[]> {
+    return await db
+      .select()
+      .from(transactions)
+      .where(and(
+        gte(transactions.date, startDate.toISOString().split('T')[0]),
+        lte(transactions.date, endDate.toISOString().split('T')[0])
+      ));
+  }
+
+  // Room booking methods
+  async getRoomBooking(id: number): Promise<RoomBooking | undefined> {
+    const [roomBooking] = await db.select().from(roomBookings).where(eq(roomBookings.id, id));
+    return roomBooking;
+  }
+
+  async createRoomBooking(roomBooking: InsertRoomBooking): Promise<RoomBooking> {
+    const [newRoomBooking] = await db.insert(roomBookings).values(roomBooking).returning();
+    return newRoomBooking;
+  }
+
+  async updateRoomBooking(id: number, roomBookingData: Partial<RoomBooking>): Promise<RoomBooking | undefined> {
+    const [updatedRoomBooking] = await db
+      .update(roomBookings)
+      .set(roomBookingData)
+      .where(eq(roomBookings.id, id))
+      .returning();
+    return updatedRoomBooking;
+  }
+
+  async deleteRoomBooking(id: number): Promise<boolean> {
+    const result = await db.delete(roomBookings).where(eq(roomBookings.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getAllRoomBookings(): Promise<RoomBooking[]> {
+    return await db.select().from(roomBookings);
+  }
+
+  async getRoomBookingsByRoomId(roomId: number): Promise<RoomBooking[]> {
+    return await db
+      .select()
+      .from(roomBookings)
+      .where(eq(roomBookings.roomId, roomId));
+  }
+
+  async getRoomBookingsByDate(date: Date): Promise<RoomBooking[]> {
+    const formattedDate = date.toISOString().split('T')[0];
+    return await db
+      .select()
+      .from(roomBookings)
+      .where(eq(roomBookings.date, formattedDate));
+  }
+
+  async getRoomBookingsByDateRange(startDate: Date, endDate: Date): Promise<RoomBooking[]> {
+    return await db
+      .select()
+      .from(roomBookings)
+      .where(and(
+        gte(roomBookings.date, startDate.toISOString().split('T')[0]),
+        lte(roomBookings.date, endDate.toISOString().split('T')[0])
+      ));
+  }
+
+  async checkRoomAvailability(roomId: number, date: Date, startTime: string, endTime: string): Promise<boolean> {
+    const formattedDate = date.toISOString().split('T')[0];
+    
+    // Get bookings for this room and date
+    const bookingsOnDate = await db
+      .select()
+      .from(roomBookings)
+      .where(and(
+        eq(roomBookings.roomId, roomId),
+        eq(roomBookings.date, formattedDate)
+      ));
+    
+    // Check for overlapping bookings
+    const hasOverlap = bookingsOnDate.some(booking => {
+      const bookingStartTime = booking.startTime;
+      const bookingEndTime = booking.endTime;
+      
+      // Check for overlap
+      return (startTime < bookingEndTime && endTime > bookingStartTime);
+    });
+    
+    return !hasOverlap;
+  }
+
+  // Permission methods
+  async getPermission(id: number): Promise<Permission | undefined> {
+    const [permission] = await db.select().from(permissions).where(eq(permissions.id, id));
+    return permission;
+  }
+
+  async createPermission(permission: InsertPermission): Promise<Permission> {
+    const [newPermission] = await db.insert(permissions).values(permission).returning();
+    return newPermission;
+  }
+
+  async updatePermission(id: number, permissionData: Partial<Permission>): Promise<Permission | undefined> {
+    const [updatedPermission] = await db
+      .update(permissions)
+      .set(permissionData)
+      .where(eq(permissions.id, id))
+      .returning();
+    return updatedPermission;
+  }
+
+  async deletePermission(id: number): Promise<boolean> {
+    const result = await db.delete(permissions).where(eq(permissions.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getAllPermissions(): Promise<Permission[]> {
+    return await db.select().from(permissions);
+  }
+
+  // Role permission methods
+  async getRolePermission(id: number): Promise<RolePermission | undefined> {
+    const [rolePermission] = await db.select().from(rolePermissions).where(eq(rolePermissions.id, id));
+    return rolePermission;
+  }
+
+  async createRolePermission(rolePermission: InsertRolePermission): Promise<RolePermission> {
+    const [newRolePermission] = await db.insert(rolePermissions).values(rolePermission).returning();
+    return newRolePermission;
+  }
+
+  async updateRolePermission(id: number, rolePermissionData: Partial<RolePermission>): Promise<RolePermission | undefined> {
+    const [updatedRolePermission] = await db
+      .update(rolePermissions)
+      .set(rolePermissionData)
+      .where(eq(rolePermissions.id, id))
+      .returning();
+    return updatedRolePermission;
+  }
+
+  async deleteRolePermission(id: number): Promise<boolean> {
+    const result = await db.delete(rolePermissions).where(eq(rolePermissions.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getAllRolePermissions(): Promise<RolePermission[]> {
+    return await db.select().from(rolePermissions);
+  }
+
+  async getRolePermissionsByRole(role: string): Promise<RolePermission[]> {
+    return await db
+      .select()
+      .from(rolePermissions)
+      .where(eq(rolePermissions.role, role));
+  }
+}
+
+// Use database storage instead of memory storage
+export const storage = new DatabaseStorage();
