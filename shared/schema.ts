@@ -14,9 +14,6 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("psychologist"), // admin, psychologist, receptionist
   status: text("status").notNull().default("active"), // active, inactive, pending
   profileImage: text("profile_image"),
-  birthDate: date("birth_date"),
-  phoneNumber: text("phone_number"),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -27,8 +24,6 @@ export const insertUserSchema = createInsertSchema(users).pick({
   role: true,
   status: true,
   profileImage: true,
-  birthDate: true,
-  phoneNumber: true,
 });
 
 // Psychologist specific info

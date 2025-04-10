@@ -10,6 +10,7 @@ import Psychologists from "@/pages/psychologists";
 import Rooms from "@/pages/rooms";
 import Financial from "@/pages/financial";
 import Permissions from "@/pages/permissions";
+import Profile from "@/pages/profile";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -23,6 +24,7 @@ function Router() {
       <ProtectedRoute path="/rooms" component={Rooms} />
       <ProtectedRoute path="/financial" component={Financial} />
       <ProtectedRoute path="/permissions" component={Permissions} />
+      <ProtectedRoute path="/profile" component={Profile} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
