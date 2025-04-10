@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Menu, X, Home, CalendarDays, Users, DoorOpen, BarChart3, Lock, Settings, LogOut } from "lucide-react";
+import { Menu, X, Home, CalendarDays, Users, DoorOpen, BarChart3, Lock, Settings, LogOut, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function MobileNav() {
@@ -62,6 +62,12 @@ export default function MobileNav() {
       icon: <Lock className="w-5 h-5" />,
       href: "/permissions",
       allowedRoles: ["admin"]
+    },
+    {
+      name: "Meu Perfil",
+      icon: <UserCircle className="w-5 h-5" />,
+      href: "/profile",
+      allowedRoles: ["admin", "psychologist", "receptionist"]
     },
     {
       name: "Configurações",
@@ -189,18 +195,18 @@ export default function MobileNav() {
             </Link>
           </li>
           <li>
-            <Link href="/rooms">
-              <a className={`flex flex-col items-center ${isActive("/rooms") ? "text-primary" : "text-neutral-dark"}`}>
-                <DoorOpen className="h-5 w-5" />
-                <span className="text-xs mt-1">Salas</span>
+            <Link href="/profile">
+              <a className={`flex flex-col items-center ${isActive("/profile") ? "text-primary" : "text-neutral-dark"}`}>
+                <UserCircle className="h-5 w-5" />
+                <span className="text-xs mt-1">Perfil</span>
               </a>
             </Link>
           </li>
           <li>
-            <Link href="/financial">
-              <a className={`flex flex-col items-center ${isActive("/financial") ? "text-primary" : "text-neutral-dark"}`}>
-                <BarChart3 className="h-5 w-5" />
-                <span className="text-xs mt-1">Financeiro</span>
+            <Link href="/rooms">
+              <a className={`flex flex-col items-center ${isActive("/rooms") ? "text-primary" : "text-neutral-dark"}`}>
+                <DoorOpen className="h-5 w-5" />
+                <span className="text-xs mt-1">Salas</span>
               </a>
             </Link>
           </li>

@@ -9,7 +9,8 @@ import {
   BarChart3, 
   Lock, 
   Settings, 
-  LogOut 
+  LogOut,
+  UserCircle
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -56,6 +57,12 @@ export default function Sidebar() {
       icon: <Lock className="w-5 h-5 mr-3 text-primary" />,
       href: "/permissions",
       allowedRoles: ["admin"]
+    },
+    {
+      name: "Meu Perfil",
+      icon: <UserCircle className="w-5 h-5 mr-3 text-primary" />,
+      href: "/profile",
+      allowedRoles: ["admin", "psychologist", "receptionist"]
     },
     {
       name: "Configurações",
