@@ -108,16 +108,15 @@ export default function Sidebar() {
         <ul>
           {filteredItems.map((item) => (
             <li key={item.href}>
-              <Link href={item.href}>
-                <a 
-                  className={cn(
-                    "flex items-center py-3 px-4 text-neutral-darkest hover:bg-neutral-lightest",
-                    isActive(item.href) && "border-l-4 border-primary bg-primary/5"
-                  )}
-                >
-                  {item.icon}
-                  <span>{item.name}</span>
-                </a>
+              <Link 
+                href={item.href}
+                className={cn(
+                  "flex items-center py-3 px-4 text-neutral-darkest hover:bg-neutral-lightest",
+                  isActive(item.href) && "border-l-4 border-primary bg-primary/5"
+                )}
+              >
+                {item.icon}
+                <span>{item.name}</span>
               </Link>
             </li>
           ))}

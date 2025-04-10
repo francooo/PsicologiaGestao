@@ -147,17 +147,16 @@ export default function MobileNav() {
           <ul>
             {filteredItems.map((item) => (
               <li key={item.href}>
-                <Link href={item.href}>
-                  <a 
-                    onClick={closeMenu}
-                    className={cn(
-                      "flex items-center py-3 px-4 text-neutral-darkest hover:bg-neutral-lightest",
-                      isActive(item.href) && "border-l-4 border-primary bg-primary/5"
-                    )}
-                  >
-                    <div className="w-5 h-5 mr-3 text-primary">{item.icon}</div>
-                    <span>{item.name}</span>
-                  </a>
+                <Link 
+                  href={item.href}
+                  onClick={closeMenu}
+                  className={cn(
+                    "flex items-center py-3 px-4 text-neutral-darkest hover:bg-neutral-lightest",
+                    isActive(item.href) && "border-l-4 border-primary bg-primary/5"
+                  )}
+                >
+                  <div className="w-5 h-5 mr-3 text-primary">{item.icon}</div>
+                  <span>{item.name}</span>
                 </Link>
               </li>
             ))}
@@ -179,35 +178,39 @@ export default function MobileNav() {
       <nav className="fixed bottom-0 w-full bg-white shadow-md py-2 px-6 md:hidden z-10">
         <ul className="flex justify-between">
           <li>
-            <Link href="/dashboard">
-              <a className={`flex flex-col items-center ${isActive("/dashboard") ? "text-primary" : "text-neutral-dark"}`}>
-                <Home className="h-5 w-5" />
-                <span className="text-xs mt-1">Dashboard</span>
-              </a>
+            <Link 
+              href="/dashboard"
+              className={`flex flex-col items-center ${isActive("/dashboard") ? "text-primary" : "text-neutral-dark"}`}
+            >
+              <Home className="h-5 w-5" />
+              <span className="text-xs mt-1">Dashboard</span>
             </Link>
           </li>
           <li>
-            <Link href="/appointments">
-              <a className={`flex flex-col items-center ${isActive("/appointments") ? "text-primary" : "text-neutral-dark"}`}>
-                <CalendarDays className="h-5 w-5" />
-                <span className="text-xs mt-1">Agenda</span>
-              </a>
+            <Link 
+              href="/appointments"
+              className={`flex flex-col items-center ${isActive("/appointments") ? "text-primary" : "text-neutral-dark"}`}
+            >
+              <CalendarDays className="h-5 w-5" />
+              <span className="text-xs mt-1">Agenda</span>
             </Link>
           </li>
           <li>
-            <Link href="/profile">
-              <a className={`flex flex-col items-center ${isActive("/profile") ? "text-primary" : "text-neutral-dark"}`}>
-                <UserCircle className="h-5 w-5" />
-                <span className="text-xs mt-1">Perfil</span>
-              </a>
+            <Link 
+              href="/profile"
+              className={`flex flex-col items-center ${isActive("/profile") ? "text-primary" : "text-neutral-dark"}`}
+            >
+              <UserCircle className="h-5 w-5" />
+              <span className="text-xs mt-1">Perfil</span>
             </Link>
           </li>
           <li>
-            <Link href="/rooms">
-              <a className={`flex flex-col items-center ${isActive("/rooms") ? "text-primary" : "text-neutral-dark"}`}>
-                <DoorOpen className="h-5 w-5" />
-                <span className="text-xs mt-1">Salas</span>
-              </a>
+            <Link 
+              href="/rooms"
+              className={`flex flex-col items-center ${isActive("/rooms") ? "text-primary" : "text-neutral-dark"}`}
+            >
+              <DoorOpen className="h-5 w-5" />
+              <span className="text-xs mt-1">Salas</span>
             </Link>
           </li>
           <li>
