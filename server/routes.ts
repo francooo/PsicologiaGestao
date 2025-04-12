@@ -8,6 +8,7 @@ import { fromZodError } from "zod-validation-error";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import * as WhatsAppService from "./services/whatsapp";
 
 // Configure multer for image upload
 const uploadDir = path.join(process.cwd(), "uploads");
