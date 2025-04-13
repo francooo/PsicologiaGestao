@@ -13,6 +13,7 @@ import Permissions from "@/pages/permissions";
 import Profile from "@/pages/profile";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
+import PasswordRecovery from "./pages/password-recovery";
 
 function Router() {
   return (
