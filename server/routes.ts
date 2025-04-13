@@ -818,6 +818,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded images
   app.use("/uploads", express.static(uploadDir));
 
+  // WhatsApp Integration
+  app.post("/api/whatsapp/share-availability", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const { 
+        phoneNumber, 
+        psychologistId, 
+        startDate, 
+        endDate, 
+        customMessage 
+      } = req.body;
+      
+      if (!phoneNumber || !psychologistId || !startDate || !endDate) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Verificar se o psicólogo existe
+      const psychologist = await storage.getPsychologist(parseInt(psychologistId));
+      if (!psychologist) {
+        return res.status(404).json({ message: "Psychologist not found" });
+      }
+      
+      // Obter usuário associado ao psicólogo para pegar o nome
+      const psychologistUser = await storage.getUser(psychologist.userId);
+      if (!psychologistUser) {
+        return res.status(404).json({ message: "Psychologist user not found" });
+      }
+      
+      // Converter datas
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // Obter compromissos no período para verificar disponibilidade
+      const appointments = await storage.getAppointmentsByDateRange(start, end);
+      const psychologistAppointments = appointments.filter(app => app.psychologistId === parseInt(psychologistId));
+      
+      // Calcular slots disponíveis
+      const availableTimes = calculateAvailableSlots(start, end, psychologistAppointments, psychologist);
+      
+      // Enviar via WhatsApp
+      const result = await WhatsAppService.shareAvailableTimesViaWhatsApp(
+        phoneNumber,
+        psychologistUser.fullName,
+        availableTimes,
+        customMessage || "",
+        start,
+        end
+      );
+      
+      res.json({ 
+        success: true, 
+        message: "Availability shared successfully", 
+        result 
+      });
+    } catch (error) {
+      console.error("Error sharing availability via WhatsApp:", error);
+      res.status(500).json({ 
+        message: "Error sharing availability", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
