@@ -137,6 +137,11 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
+                    <div className="text-right mb-4">
+                      <a href="/recover-password" className="text-primary hover:underline text-sm">
+                        Esqueceu sua senha?
+                      </a>
+                    </div>
                     <Button 
                       type="submit" 
                       className="w-full" 

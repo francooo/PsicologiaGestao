@@ -26,6 +26,7 @@ function Router() {
       <ProtectedRoute path="/permissions" component={Permissions} />
       <ProtectedRoute path="/profile" component={Profile} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/recover-password" component={PasswordRecovery} />
       <Route component={NotFound} />
     </Switch>
   );
