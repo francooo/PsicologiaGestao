@@ -818,6 +818,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded images
   app.use("/uploads", express.static(uploadDir));
 
+  // Password Recovery
+  app.post("/api/recover-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      // Buscar usuário pelo email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Por segurança, não informamos se o email existe ou não
+        return res.status(200).json({ 
+          message: "Se o email existir, você receberá as instruções de recuperação."
+        });
+      }
+
+      // Gerar token único
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      
+      // Salvar token no banco com expiração
+      await storage.savePasswordResetToken(user.id, resetToken);
+      
+      // Enviar email
+      await sendPasswordResetEmail(user, resetToken);
+      
+      res.status(200).json({ 
+        message: "Se o email existir, você receberá as instruções de recuperação."
+      });
+    } catch (error) {
+      console.error('Error in password recovery:', error);
+      res.status(500).json({ message: "Erro ao processar recuperação de senha" });
+    }
+  });
+
   // WhatsApp Integration
   app.post("/api/whatsapp/share-availability", async (req, res) => {
     try {

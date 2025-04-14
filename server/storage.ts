@@ -25,7 +25,7 @@ export interface IStorage {
   updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
   getAllUsers(): Promise<User[]>;
-  
+
   // Psychologist related methods
   getPsychologist(id: number): Promise<Psychologist | undefined>;
   getPsychologistByUserId(userId: number): Promise<Psychologist | undefined>;
@@ -33,14 +33,14 @@ export interface IStorage {
   updatePsychologist(id: number, psychologist: Partial<Psychologist>): Promise<Psychologist | undefined>;
   deletePsychologist(id: number): Promise<boolean>;
   getAllPsychologists(): Promise<Psychologist[]>;
-  
+
   // Room related methods
   getRoom(id: number): Promise<Room | undefined>;
   createRoom(room: InsertRoom): Promise<Room>;
   updateRoom(id: number, room: Partial<Room>): Promise<Room | undefined>;
   deleteRoom(id: number): Promise<boolean>;
   getAllRooms(): Promise<Room[]>;
-  
+
   // Appointment related methods
   getAppointment(id: number): Promise<Appointment | undefined>;
   createAppointment(appointment: InsertAppointment): Promise<Appointment>;
@@ -50,7 +50,7 @@ export interface IStorage {
   getAppointmentsByPsychologistId(psychologistId: number): Promise<Appointment[]>;
   getAppointmentsByDate(date: Date): Promise<Appointment[]>;
   getAppointmentsByDateRange(startDate: Date, endDate: Date): Promise<Appointment[]>;
-  
+
   // Transaction related methods
   getTransaction(id: number): Promise<Transaction | undefined>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
@@ -59,7 +59,7 @@ export interface IStorage {
   getAllTransactions(): Promise<Transaction[]>;
   getTransactionsByType(type: string): Promise<Transaction[]>;
   getTransactionsByDateRange(startDate: Date, endDate: Date): Promise<Transaction[]>;
-  
+
   // Room booking related methods
   getRoomBooking(id: number): Promise<RoomBooking | undefined>;
   createRoomBooking(roomBooking: InsertRoomBooking): Promise<RoomBooking>;
@@ -70,14 +70,14 @@ export interface IStorage {
   getRoomBookingsByDate(date: Date): Promise<RoomBooking[]>;
   getRoomBookingsByDateRange(startDate: Date, endDate: Date): Promise<RoomBooking[]>;
   checkRoomAvailability(roomId: number, date: Date, startTime: string, endTime: string): Promise<boolean>;
-  
+
   // Permission related methods
   getPermission(id: number): Promise<Permission | undefined>;
   createPermission(permission: InsertPermission): Promise<Permission>;
   updatePermission(id: number, permission: Partial<Permission>): Promise<Permission | undefined>;
   deletePermission(id: number): Promise<boolean>;
   getAllPermissions(): Promise<Permission[]>;
-  
+
   // Role permission related methods
   getRolePermission(id: number): Promise<RolePermission | undefined>;
   createRolePermission(rolePermission: InsertRolePermission): Promise<RolePermission>;
@@ -85,9 +85,11 @@ export interface IStorage {
   deleteRolePermission(id: number): Promise<boolean>;
   getAllRolePermissions(): Promise<RolePermission[]>;
   getRolePermissionsByRole(role: string): Promise<RolePermission[]>;
-  
+
   // Session store
   sessionStore: session.Store;
+  getUserByEmail: (email: string) => Promise<User | undefined>;
+  savePasswordResetToken: (userId: number, token: string) => Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -99,7 +101,7 @@ export class MemStorage implements IStorage {
   private roomBookings: Map<number, RoomBooking>;
   private permissions: Map<number, Permission>;
   private rolePermissions: Map<number, RolePermission>;
-  
+
   // For auto-incrementing IDs
   private userIdCounter: number = 1;
   private psychologistIdCounter: number = 1;
@@ -109,7 +111,7 @@ export class MemStorage implements IStorage {
   private roomBookingIdCounter: number = 1;
   private permissionIdCounter: number = 1;
   private rolePermissionIdCounter: number = 1;
-  
+
   sessionStore: session.Store;
 
   constructor() {
@@ -121,15 +123,15 @@ export class MemStorage implements IStorage {
     this.roomBookings = new Map();
     this.permissions = new Map();
     this.rolePermissions = new Map();
-    
+
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // prune expired entries every 24h
     });
-    
+
     // Initialize with default permissions
     this.initDefaultData();
   }
-  
+
   private initDefaultData() {
     // Create default permissions
     const defaultPermissions = [
@@ -146,7 +148,7 @@ export class MemStorage implements IStorage {
       { name: "permissions_view", description: "View permissions" },
       { name: "permissions_manage", description: "Manage permissions" }
     ];
-    
+
     defaultPermissions.forEach(permission => {
       this.createPermission({
         name: permission.name,
@@ -174,7 +176,7 @@ export class MemStorage implements IStorage {
   async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
     const existingUser = this.users.get(id);
     if (!existingUser) return undefined;
-    
+
     const updatedUser = { ...existingUser, ...userData };
     this.users.set(id, updatedUser);
     return updatedUser;
@@ -207,7 +209,7 @@ export class MemStorage implements IStorage {
   async updatePsychologist(id: number, psychologistData: Partial<Psychologist>): Promise<Psychologist | undefined> {
     const existingPsychologist = this.psychologists.get(id);
     if (!existingPsychologist) return undefined;
-    
+
     const updatedPsychologist = { ...existingPsychologist, ...psychologistData };
     this.psychologists.set(id, updatedPsychologist);
     return updatedPsychologist;
@@ -236,7 +238,7 @@ export class MemStorage implements IStorage {
   async updateRoom(id: number, roomData: Partial<Room>): Promise<Room | undefined> {
     const existingRoom = this.rooms.get(id);
     if (!existingRoom) return undefined;
-    
+
     const updatedRoom = { ...existingRoom, ...roomData };
     this.rooms.set(id, updatedRoom);
     return updatedRoom;
@@ -265,7 +267,7 @@ export class MemStorage implements IStorage {
   async updateAppointment(id: number, appointmentData: Partial<Appointment>): Promise<Appointment | undefined> {
     const existingAppointment = this.appointments.get(id);
     if (!existingAppointment) return undefined;
-    
+
     const updatedAppointment = { ...existingAppointment, ...appointmentData };
     this.appointments.set(id, updatedAppointment);
     return updatedAppointment;
@@ -316,7 +318,7 @@ export class MemStorage implements IStorage {
   async updateTransaction(id: number, transactionData: Partial<Transaction>): Promise<Transaction | undefined> {
     const existingTransaction = this.transactions.get(id);
     if (!existingTransaction) return undefined;
-    
+
     const updatedTransaction = { ...existingTransaction, ...transactionData };
     this.transactions.set(id, updatedTransaction);
     return updatedTransaction;
@@ -358,7 +360,7 @@ export class MemStorage implements IStorage {
   async updateRoomBooking(id: number, roomBookingData: Partial<RoomBooking>): Promise<RoomBooking | undefined> {
     const existingRoomBooking = this.roomBookings.get(id);
     if (!existingRoomBooking) return undefined;
-    
+
     const updatedRoomBooking = { ...existingRoomBooking, ...roomBookingData };
     this.roomBookings.set(id, updatedRoomBooking);
     return updatedRoomBooking;
@@ -397,18 +399,18 @@ export class MemStorage implements IStorage {
   async checkRoomAvailability(roomId: number, date: Date, startTime: string, endTime: string): Promise<boolean> {
     const dateString = date.toISOString().split('T')[0];
     const bookingsOnDate = await this.getRoomBookingsByDate(date);
-    
+
     // Check if there are any overlapping bookings
     const hasOverlap = bookingsOnDate.some(booking => {
       if (booking.roomId !== roomId) return false;
-      
+
       const bookingStartTime = booking.startTime;
       const bookingEndTime = booking.endTime;
-      
+
       // Check for overlap
       return (startTime < bookingEndTime && endTime > bookingStartTime);
     });
-    
+
     return !hasOverlap;
   }
 
@@ -427,7 +429,7 @@ export class MemStorage implements IStorage {
   async updatePermission(id: number, permissionData: Partial<Permission>): Promise<Permission | undefined> {
     const existingPermission = this.permissions.get(id);
     if (!existingPermission) return undefined;
-    
+
     const updatedPermission = { ...existingPermission, ...permissionData };
     this.permissions.set(id, updatedPermission);
     return updatedPermission;
@@ -456,7 +458,7 @@ export class MemStorage implements IStorage {
   async updateRolePermission(id: number, rolePermissionData: Partial<RolePermission>): Promise<RolePermission | undefined> {
     const existingRolePermission = this.rolePermissions.get(id);
     if (!existingRolePermission) return undefined;
-    
+
     const updatedRolePermission = { ...existingRolePermission, ...rolePermissionData };
     this.rolePermissions.set(id, updatedRolePermission);
     return updatedRolePermission;
@@ -474,6 +476,15 @@ export class MemStorage implements IStorage {
     return Array.from(this.rolePermissions.values())
       .filter(rp => rp.role === role);
   }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(user => user.email === email);
+  }
+
+  async savePasswordResetToken(userId: number, token: string): Promise<void> {
+    // Placeholder:  Replace with persistent token storage
+    console.log(`Token ${token} saved for user ${userId}`);
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -484,7 +495,7 @@ export class DatabaseStorage implements IStorage {
       pool,
       createTableIfMissing: true
     });
-    
+
     // Inicialização adiada de dados padrão para evitar erros de tabela não existente
     setTimeout(() => {
       this.initDefaultData().catch(err => {
@@ -492,11 +503,11 @@ export class DatabaseStorage implements IStorage {
       });
     }, 5000); // Aguarda 5 segundos para garantir que as tabelas foram criadas
   }
-  
+
   private async initDefaultData() {
     // Check if permissions table is empty
     const existingPermissions = await db.select().from(permissions);
-    
+
     if (existingPermissions.length === 0) {
       // Create default permissions
       const defaultPermissions = [
@@ -513,7 +524,7 @@ export class DatabaseStorage implements IStorage {
         { name: "permissions_view", description: "View permissions" },
         { name: "permissions_manage", description: "Manage permissions" }
       ];
-      
+
       for (const permission of defaultPermissions) {
         await this.createPermission({
           name: permission.name,
@@ -776,7 +787,7 @@ export class DatabaseStorage implements IStorage {
 
   async checkRoomAvailability(roomId: number, date: Date, startTime: string, endTime: string): Promise<boolean> {
     const formattedDate = date.toISOString().split('T')[0];
-    
+
     // Get bookings for this room and date
     const bookingsOnDate = await db
       .select()
@@ -785,16 +796,16 @@ export class DatabaseStorage implements IStorage {
         eq(roomBookings.roomId, roomId),
         eq(roomBookings.date, formattedDate)
       ));
-    
+
     // Check for overlapping bookings
     const hasOverlap = bookingsOnDate.some(booking => {
       const bookingStartTime = booking.startTime;
       const bookingEndTime = booking.endTime;
-      
+
       // Check for overlap
       return (startTime < bookingEndTime && endTime > bookingStartTime);
     });
-    
+
     return !hasOverlap;
   }
 
@@ -849,7 +860,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRolePermission(id: number): Promise<boolean> {
     const result = await db.delete(rolePermissions).where(eq(rolePermissions.id, id));
-    return result.rowCount ? result.rowCount > 0 : false;
+    return result.rowCount ? result.rowCount > 0: false;
   }
 
   async getAllRolePermissions(): Promise<RolePermission[]> {
@@ -861,6 +872,15 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(rolePermissions)
       .where(eq(rolePermissions.role, role));
+  }
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async savePasswordResetToken(userId: number, token: string): Promise<void> {
+    // Placeholder implementation. Replace with actual token storage in a database table.
+    console.log(`Password reset token '${token}' saved for user ID ${userId}`);
   }
 }
 
