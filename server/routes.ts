@@ -1159,6 +1159,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Google Calendar routes
+  app.use("/api/google-calendar", googleCalendarRoutes);
+
   const httpServer = createServer(app);
   return httpServer;
 }

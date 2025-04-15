@@ -8,7 +8,20 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, differenceInYears } from "date-fns";
-import { CalendarIcon, UserCircle, Phone, Calendar as CalendarIcon2, Clock, Users, Home, ArrowLeft, CheckCircle } from "lucide-react";
+import { 
+  CalendarIcon, 
+  UserCircle, 
+  Phone, 
+  Calendar as CalendarIcon2, 
+  Clock, 
+  Users, 
+  Home, 
+  ArrowLeft, 
+  CheckCircle, 
+  Link as LinkIcon, 
+  Unlink,
+  CalendarClock
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -17,6 +30,8 @@ import { useForm } from "react-hook-form";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import * as z from "zod";
 import { useAuth } from "@/hooks/use-auth";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ProfileSchema = z.object({
   fullName: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -131,6 +146,69 @@ export default function ProfilePage() {
   // Estado para mostrar notificação de sucesso
   const [showSuccess, setShowSuccess] = useState(false);
   const [, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState("personal");
+
+  // Estado para verificar a conexão com o Google Calendar
+  const { data: googleCalendarStatus } = useQuery({
+    queryKey: ["/api/google-calendar/status"],
+    enabled: !!user,
+  });
+
+  // Estado para os próximos eventos do Google Calendar
+  const { data: googleCalendarEvents, isLoading: isLoadingEvents } = useQuery({
+    queryKey: ["/api/google-calendar/events"],
+    enabled: !!user && !!googleCalendarStatus?.authenticated,
+  });
+
+  // Iniciar a autenticação do Google Calendar
+  const connectGoogleCalendarMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("GET", "/api/google-calendar/auth");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Abre a URL de autenticação do Google em uma nova janela
+      window.open(data.authUrl, "_blank");
+      
+      toast({
+        title: "Redirecionando para o Google",
+        description: "Uma nova janela foi aberta para você autorizar o acesso ao Google Calendar.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível conectar ao Google Calendar. Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Verificar se viemos de uma redireção da autenticação do Google
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const googleCalendarConnected = urlParams.get("googleCalendarConnected");
+    const googleCalendarError = urlParams.get("googleCalendarError");
+    
+    if (googleCalendarConnected === "true") {
+      toast({
+        title: "Conectado ao Google Calendar",
+        description: "Agora você pode sincronizar seus agendamentos com o Google Calendar.",
+      });
+      // Remover parâmetros da URL
+      navigate("/profile", { replace: true });
+      // Revalidar o status de autenticação
+      queryClient.invalidateQueries({ queryKey: ["/api/google-calendar/status"] });
+    } else if (googleCalendarError === "true") {
+      toast({
+        title: "Erro na conexão",
+        description: "Não foi possível conectar ao Google Calendar. Tente novamente.",
+        variant: "destructive",
+      });
+      // Remover parâmetros da URL
+      navigate("/profile", { replace: true });
+    }
+  }, []);
 
   // Atualiza o tratamento da mutação para exibir a notificação de sucesso
   const handleProfileUpdate = (values: z.infer<typeof ProfileSchema>) => {
@@ -186,16 +264,28 @@ export default function ProfilePage() {
       )}
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Formulário de perfil */}
+        {/* Formulário de perfil e Integrações */}
         <div className="md:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações Pessoais</CardTitle>
-              <CardDescription>
-                Atualize suas informações pessoais e de contato
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Tabs 
+            defaultValue="personal" 
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="mb-6"
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
+              <TabsTrigger value="integrations">Integrações</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="personal">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informações Pessoais</CardTitle>
+                  <CardDescription>
+                    Atualize suas informações pessoais e de contato
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <div className="flex flex-col items-center mb-6">
@@ -317,6 +407,92 @@ export default function ProfilePage() {
               </Form>
             </CardContent>
           </Card>
+            </TabsContent>
+            
+            <TabsContent value="integrations">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Integrações</CardTitle>
+                  <CardDescription>
+                    Conecte sua conta com outras plataformas e serviços
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="border rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 rounded-full">
+                          <CalendarClock className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Google Calendar</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Sincronize seus agendamentos com o Google Calendar
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {googleCalendarStatus?.authenticated ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-green-600 font-medium flex items-center">
+                            <CheckCircle className="h-4 w-4 mr-1" /> Conectado
+                          </span>
+                        </div>
+                      ) : (
+                        <Button 
+                          onClick={() => connectGoogleCalendarMutation.mutate()}
+                          disabled={connectGoogleCalendarMutation.isPending}
+                          className="flex items-center gap-2"
+                        >
+                          <LinkIcon className="h-4 w-4" />
+                          {connectGoogleCalendarMutation.isPending 
+                            ? "Conectando..." 
+                            : "Conectar"
+                          }
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {googleCalendarStatus?.authenticated && (
+                      <div className="space-y-4 mt-2">
+                        <Alert>
+                          <CalendarClock className="h-4 w-4" />
+                          <AlertTitle>Sincronização ativa</AlertTitle>
+                          <AlertDescription>
+                            Seus agendamentos serão automaticamente sincronizados com seu Google Calendar.
+                          </AlertDescription>
+                        </Alert>
+                        
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium">Próximos eventos</h4>
+                          {isLoadingEvents ? (
+                            <div className="text-center py-4">
+                              <p className="text-sm text-muted-foreground">Carregando eventos...</p>
+                            </div>
+                          ) : googleCalendarEvents && googleCalendarEvents.length > 0 ? (
+                            <div className="space-y-2">
+                              {googleCalendarEvents.slice(0, 3).map((event: any, index: number) => (
+                                <div key={index} className="border rounded p-2 text-sm">
+                                  <p className="font-medium">{event.summary}</p>
+                                  <p className="text-muted-foreground">
+                                    {new Date(event.start?.dateTime).toLocaleString()}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-4">
+                              <p className="text-sm text-muted-foreground">Nenhum evento próximo encontrado</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Cards de estatísticas */}
