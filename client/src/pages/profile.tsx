@@ -149,13 +149,13 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("personal");
 
   // Estado para verificar a conexão com o Google Calendar
-  const { data: googleCalendarStatus } = useQuery({
+  const { data: googleCalendarStatus } = useQuery<{ authenticated: boolean }>({
     queryKey: ["/api/google-calendar/status"],
     enabled: !!user,
   });
 
   // Estado para os próximos eventos do Google Calendar
-  const { data: googleCalendarEvents, isLoading: isLoadingEvents } = useQuery({
+  const { data: googleCalendarEvents, isLoading: isLoadingEvents } = useQuery<any[]>({
     queryKey: ["/api/google-calendar/events"],
     enabled: !!user && !!googleCalendarStatus?.authenticated,
   });
@@ -264,7 +264,7 @@ export default function ProfilePage() {
       )}
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Formulário de perfil e Integrações */}
+        {/* Seção esquerda - Perfil e Integrações */}
         <div className="md:col-span-2">
           <Tabs 
             defaultValue="personal" 
@@ -286,127 +286,127 @@ export default function ProfilePage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="flex flex-col items-center mb-6">
-                    <Avatar className="w-24 h-24 mb-4">
-                      <AvatarImage src={imagePreview || undefined} />
-                      <AvatarFallback 
-                        showPsychologySymbol={user?.role === "psychologist"}
-                        className={`text-2xl font-semibold ${user?.role === "psychologist" ? "bg-primary/10" : ""}`}
-                      >
-                        {user?.fullName?.charAt(0) || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="text-center">
-                      <Label htmlFor="picture" className="cursor-pointer text-primary font-medium">
-                        Alterar imagem de perfil (60x60px)
-                      </Label>
-                      <Input 
-                        id="picture" 
-                        type="file" 
-                        accept="image/*" 
-                        className="hidden" 
-                        onChange={handleImageChange}
-                      />
-                    </div>
-                  </div>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                      <div className="flex flex-col items-center mb-6">
+                        <Avatar className="w-24 h-24 mb-4">
+                          <AvatarImage src={imagePreview || undefined} />
+                          <AvatarFallback 
+                            showPsychologySymbol={user?.role === "psychologist"}
+                            className={`text-2xl font-semibold ${user?.role === "psychologist" ? "bg-primary/10" : ""}`}
+                          >
+                            {user?.fullName?.charAt(0) || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="text-center">
+                          <Label htmlFor="picture" className="cursor-pointer text-primary font-medium">
+                            Alterar imagem de perfil (60x60px)
+                          </Label>
+                          <Input 
+                            id="picture" 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={handleImageChange}
+                          />
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="fullName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nome completo</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Seu nome completo" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="seu.email@exemplo.com" {...field} disabled />
-                          </FormControl>
-                          <FormDescription>Email não pode ser alterado</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="phoneNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Número de telefone</FormLabel>
-                          <FormControl>
-                            <Input placeholder="(11) 99999-9999" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="birthDate"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>Data de nascimento</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="fullName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Nome completo</FormLabel>
                               <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "dd/MM/yyyy")
-                                  ) : (
-                                    <span>Selecione uma data</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
+                                <Input placeholder="Seu nome completo" {...field} />
                               </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) =>
-                                  date > new Date() || date < new Date("1900-01-01")
-                                }
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={updateProfileMutation.isPending || !form.formState.isDirty}
-                  >
-                    {updateProfileMutation.isPending ? "Salvando..." : "Salvar alterações"}
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input placeholder="seu.email@exemplo.com" {...field} disabled />
+                              </FormControl>
+                              <FormDescription>Email não pode ser alterado</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="phoneNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Número de telefone</FormLabel>
+                              <FormControl>
+                                <Input placeholder="(11) 99999-9999" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="birthDate"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Data de nascimento</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant={"outline"}
+                                      className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
+                                    >
+                                      {field.value ? (
+                                        format(field.value, "dd/MM/yyyy")
+                                      ) : (
+                                        <span>Selecione uma data</span>
+                                      )}
+                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    disabled={(date) =>
+                                      date > new Date() || date < new Date("1900-01-01")
+                                    }
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <Button 
+                        type="submit" 
+                        className="w-full" 
+                        disabled={updateProfileMutation.isPending || !form.formState.isDirty}
+                      >
+                        {updateProfileMutation.isPending ? "Salvando..." : "Salvar alterações"}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
             </TabsContent>
             
             <TabsContent value="integrations">
@@ -495,7 +495,7 @@ export default function ProfilePage() {
           </Tabs>
         </div>
 
-        {/* Cards de estatísticas */}
+        {/* Seção direita - Estatísticas */}
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-2">
