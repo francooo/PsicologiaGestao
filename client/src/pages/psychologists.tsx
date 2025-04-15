@@ -59,20 +59,38 @@ import { Loader2, Plus, Pencil, Trash2, UserCog, User } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // Psychologist form schema
-const psychologistFormSchema = z.object({
-  fullName: z.string().min(1, "Nome completo é obrigatório"),
-  email: z.string().email("Email inválido"),
-  username: z.string().min(3, "Nome de usuário deve ter pelo menos 3 caracteres"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  specialization: z.string().min(1, "Especialização é obrigatória"),
-  bio: z.string(),
-  hourlyRate: z.string().refine((val) => !isNaN(parseFloat(val)), {
-    message: "Valor deve ser um número válido",
-  }),
-  profileImage: z.string().optional(),
-  role: z.string().default("psychologist"),
-  status: z.string().default("active"),
-});
+const psychologistFormSchema = z
+  .object({
+    useExistingUser: z.boolean().default(false),
+    existingUserId: z.number().optional(),
+    fullName: z.string().min(1, "Nome completo é obrigatório"),
+    email: z.string().email("Email inválido"),
+    username: z.string().min(3, "Nome de usuário deve ter pelo menos 3 caracteres").optional(),
+    password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional(),
+    specialization: z.string().min(1, "Especialização é obrigatória"),
+    bio: z.string(),
+    hourlyRate: z.string().refine((val) => !isNaN(parseFloat(val)), {
+      message: "Valor deve ser um número válido",
+    }),
+    profileImage: z.string().optional(),
+    role: z.string().default("psychologist"),
+    status: z.string().default("active"),
+  })
+  .refine(
+    (data) => {
+      // Se estiver usando usuário existente, verificar se existingUserId está preenchido
+      if (data.useExistingUser) {
+        return !!data.existingUserId;
+      }
+      
+      // Se não estiver usando usuário existente, verificar se os campos de usuário estão preenchidos
+      return true;
+    },
+    {
+      message: "Selecione um usuário existente",
+      path: ["existingUserId"],
+    }
+  );
 
 type PsychologistFormValues = z.infer<typeof psychologistFormSchema>;
 
@@ -83,6 +101,7 @@ export default function Psychologists() {
   const [selectedPsychologist, setSelectedPsychologist] = useState<number | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [psychologistToDelete, setPsychologistToDelete] = useState<number | null>(null);
+  const [useExistingUser, setUseExistingUser] = useState(false);
 
   // Fetch psychologists
   const { data: psychologists, isLoading } = useQuery({
@@ -93,11 +112,24 @@ export default function Psychologists() {
       return res.json();
     }
   });
+  
+  // Fetch users
+  const { data: users } = useQuery({
+    queryKey: ['/api/users'],
+    queryFn: async () => {
+      const res = await fetch('/api/users');
+      if (!res.ok) throw new Error('Failed to fetch users');
+      return res.json();
+    },
+    enabled: useExistingUser
+  });
 
   // Psychologist form
   const psychologistForm = useForm<PsychologistFormValues>({
     resolver: zodResolver(psychologistFormSchema),
     defaultValues: {
+      useExistingUser: false,
+      existingUserId: undefined,
       fullName: "",
       email: "",
       username: "",
@@ -115,27 +147,35 @@ export default function Psychologists() {
   const createPsychologistMutation = useMutation({
     mutationFn: async (data: PsychologistFormValues) => {
       try {
-        // First create the user
-        const userResponse = await apiRequest("POST", "/api/register", {
-          fullName: data.fullName,
-          email: data.email,
-          username: data.username,
-          password: data.password,
-          role: data.role,
-          status: data.status,
-          profileImage: data.profileImage || undefined,
-        });
+        let userId;
         
-        if (!userResponse.ok) {
-          const error = await userResponse.json();
-          throw new Error(error.message || 'Erro ao criar usuário');
+        if (data.useExistingUser && data.existingUserId) {
+          // Se estiver usando um usuário existente, apenas usa o ID fornecido
+          userId = data.existingUserId;
+        } else {
+          // Primeiro cria o usuário
+          const userResponse = await apiRequest("POST", "/api/register", {
+            fullName: data.fullName,
+            email: data.email,
+            username: data.username,
+            password: data.password,
+            role: data.role,
+            status: data.status,
+            profileImage: data.profileImage || undefined,
+          });
+          
+          if (!userResponse.ok) {
+            const error = await userResponse.json();
+            throw new Error(error.message || 'Erro ao criar usuário');
+          }
+          
+          const user = await userResponse.json();
+          userId = user.id;
         }
         
-        const user = await userResponse.json();
-        
-        // Then create the psychologist profile
+        // Cria o perfil de psicóloga
         const psychologistResponse = await apiRequest("POST", "/api/psychologists", {
-          userId: user.id,
+          userId: userId,
           specialization: data.specialization,
           bio: data.bio,
           hourlyRate: parseFloat(data.hourlyRate),
@@ -297,35 +337,91 @@ export default function Psychologists() {
                       <div className="space-y-4">
                         <h3 className="text-sm font-medium text-neutral-dark border-b pb-2">Credenciais de Acesso</h3>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={psychologistForm.control}
+                          name="useExistingUser"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={(checked) => {
+                                    field.onChange(checked);
+                                    setUseExistingUser(checked === true);
+                                  }}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>
+                                  Usar usuário existente
+                                </FormLabel>
+                                <p className="text-sm text-muted-foreground">
+                                  Marque esta opção para associar um perfil de psicóloga a um usuário já cadastrado no sistema
+                                </p>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        {useExistingUser ? (
                           <FormField
                             control={psychologistForm.control}
-                            name="username"
+                            name="existingUserId"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Nome de Usuário</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="username" {...field} />
-                                </FormControl>
+                                <FormLabel>Selecione o usuário</FormLabel>
+                                <Select
+                                  onValueChange={(value) => field.onChange(parseInt(value))}
+                                  defaultValue={field.value?.toString() || undefined}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecione um usuário" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {users?.map((user) => (
+                                      <SelectItem key={user.id} value={user.id.toString()}>
+                                        {user.fullName || user.username} ({user.email})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                          
-                          <FormField
-                            control={psychologistForm.control}
-                            name="password"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Senha</FormLabel>
-                                <FormControl>
-                                  <Input type="password" placeholder="********" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={psychologistForm.control}
+                              name="username"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Nome de Usuário</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="username" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={psychologistForm.control}
+                              name="password"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Senha</FormLabel>
+                                  <FormControl>
+                                    <Input type="password" placeholder="********" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        )}
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <FormField

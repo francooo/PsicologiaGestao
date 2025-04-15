@@ -154,6 +154,31 @@ export function setupAuth(app: Express) {
     res.json(userResponse);
   });
   
+  // Rota para listar todos os usuários
+  app.get("/api/users", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Apenas usuários admin podem listar todos os usuários
+      if (req.user.role !== 'admin' && req.user.role !== 'psychologist' && req.user.role !== 'manager') {
+        return res.status(403).json({ message: "Acesso não autorizado" });
+      }
+      
+      const users = await storage.getAllUsers();
+      
+      // Remover senha de todos os usuários
+      const safeUsers = users.map(user => {
+        const { password, ...safeUser } = user;
+        return safeUser;
+      });
+      
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Erro ao buscar usuários:", error);
+      res.status(500).json({ message: "Erro ao buscar usuários" });
+    }
+  });
+  
   // Check if a user has a specific permission
   app.get("/api/user/permission/:permissionName", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
