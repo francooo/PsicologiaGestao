@@ -12,6 +12,7 @@ import {
   LogOut,
   UserCircle
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function Sidebar() {
   const { user, logoutMutation } = useAuth();
@@ -91,11 +92,15 @@ export default function Sidebar() {
       {/* User Profile Section */}
       <div className="p-4 border-b border-neutral-light">
         <div className="flex items-center">
-          <img 
-            src={user?.profileImage || "https://via.placeholder.com/40"} 
-            alt="Foto de perfil" 
-            className="w-12 h-12 rounded-full mr-3 border-2 border-primary"
-          />
+          <Avatar className="w-12 h-12 mr-3 border-2 border-primary">
+            <AvatarImage src={user?.profileImage || undefined} alt={user?.fullName || "Usuário"} />
+            <AvatarFallback 
+              showPsychologySymbol={user?.role === "psychologist"}
+              className={`text-lg font-semibold ${user?.role === "psychologist" ? "bg-primary/10" : ""}`}
+            >
+              {user?.fullName?.charAt(0) || "U"}
+            </AvatarFallback>
+          </Avatar>
           <div>
             <h3 className="font-semibold text-neutral-darkest">{user?.fullName || "Usuário"}</h3>
             <p className="text-xs text-neutral-dark capitalize">{user?.role || "Usuário"}</p>

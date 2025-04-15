@@ -201,7 +201,12 @@ export default function ProfilePage() {
                   <div className="flex flex-col items-center mb-6">
                     <Avatar className="w-24 h-24 mb-4">
                       <AvatarImage src={imagePreview || undefined} />
-                      <AvatarFallback>{user?.fullName?.charAt(0) || "U"}</AvatarFallback>
+                      <AvatarFallback 
+                        showPsychologySymbol={user?.role === "psychologist"}
+                        className={`text-2xl font-semibold ${user?.role === "psychologist" ? "bg-primary/10" : ""}`}
+                      >
+                        {user?.fullName?.charAt(0) || "U"}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="text-center">
                       <Label htmlFor="picture" className="cursor-pointer text-primary font-medium">
@@ -386,7 +391,12 @@ export default function ProfilePage() {
             <CardContent className="flex justify-center">
               <Avatar className="w-16 h-16">
                 <AvatarImage src={imagePreview || undefined} />
-                <AvatarFallback>{user?.fullName?.charAt(0) || "U"}</AvatarFallback>
+                <AvatarFallback 
+                  showPsychologySymbol={user?.role === "psychologist"}
+                  className={`text-lg font-semibold ${user?.role === "psychologist" ? "bg-primary/10" : ""}`}
+                >
+                  {user?.fullName?.charAt(0) || "U"}
+                </AvatarFallback>
               </Avatar>
             </CardContent>
             <CardFooter className="flex justify-center">
