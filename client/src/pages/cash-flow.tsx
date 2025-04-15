@@ -237,11 +237,19 @@ export default function CashFlow() {
     const dailyData = Array.from(dateMap.values());
     dailyData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
-    // Format dates for display
-    return dailyData.map(item => ({
-      ...item,
-      displayDate: format(new Date(item.date), 'dd/MM')
-    }));
+    // Calcular saldo acumulado (cumulativo)
+    let accumulatedBalance = 0;
+    const dataWithAccumulatedBalance = dailyData.map(item => {
+      accumulatedBalance += item.balance;
+      return {
+        ...item,
+        displayDate: format(new Date(item.date), 'dd/MM'),
+        // Substituir o saldo diário pelo saldo acumulado
+        balance: accumulatedBalance
+      };
+    });
+    
+    return dataWithAccumulatedBalance;
   };
 
   // Filter transactions based on selected categories and type
@@ -402,7 +410,53 @@ export default function CashFlow() {
                 <Plus className="mr-2 h-4 w-4" />
                 Gerar Dados de Exemplo
               </Button>
-              <Button>
+              <Button 
+                onClick={() => {
+                  // Preparar os dados para exportação
+                  if (filteredTransactions.length === 0) {
+                    toast({
+                      title: "Sem dados",
+                      description: "Não há transações para exportar no período selecionado",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  
+                  // Preparar cabeçalho e linhas para CSV
+                  const headers = ["Data", "Descrição", "Categoria", "Tipo", "Valor"];
+                  const csvData = filteredTransactions.map(t => [
+                    formatDate(t.date),
+                    t.description,
+                    t.category,
+                    t.type === 'income' ? 'Receita' : 'Despesa',
+                    formatCurrency(Number(t.amount))
+                  ]);
+                  
+                  // Juntar tudo em uma string CSV
+                  const csvContent = [
+                    headers.join(','),
+                    ...csvData.map(row => row.join(','))
+                  ].join('\n');
+                  
+                  // Criar blob e link para download
+                  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const link = document.createElement('a');
+                  const url = URL.createObjectURL(blob);
+                  
+                  // Configurar e clicar no link para iniciar o download
+                  link.setAttribute('href', url);
+                  link.setAttribute('download', `fluxo-caixa-${dateRange.startDate}-a-${dateRange.endDate}.csv`);
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  
+                  toast({
+                    title: "Sucesso",
+                    description: "Relatório CSV exportado com sucesso",
+                    variant: "default"
+                  });
+                }}
+              >
                 <FileDown className="mr-2 h-4 w-4" />
                 Exportar Relatório
               </Button>
@@ -513,7 +567,7 @@ export default function CashFlow() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Fluxo de Caixa Diário</CardTitle>
-                <CardDescription>Evolução de receitas e despesas no período selecionado</CardDescription>
+                <CardDescription>Evolução de receitas, despesas e saldo acumulado no período</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-80 w-full">
@@ -556,6 +610,12 @@ export default function CashFlow() {
                           name="Despesas" 
                           dataKey="expense" 
                           fill="#F44336" 
+                          radius={[4, 4, 0, 0]} 
+                        />
+                        <Bar 
+                          name="Saldo Acumulado" 
+                          dataKey="balance" 
+                          fill="#673AB7" 
                           radius={[4, 4, 0, 0]} 
                         />
                       </BarChart>
