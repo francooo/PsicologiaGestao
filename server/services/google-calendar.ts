@@ -348,3 +348,68 @@ export async function isUserAuthenticated(userId: number): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Cria um evento de agendamento no Google Calendar e retorna o link para compartilhar
+ */
+export async function createBookingEvent(
+  psychologistUserId: number,
+  eventData: {
+    summary: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    details?: string;
+  }
+): Promise<string | null> {
+  try {
+    // Verificar se o psicólogo está autenticado no Google Calendar
+    const isAuthenticated = await isUserAuthenticated(psychologistUserId);
+    if (!isAuthenticated) {
+      console.error('Psicólogo não está autenticado no Google Calendar');
+      return null;
+    }
+
+    // Formatar datas para o Google Calendar
+    const startDateTime = new Date(`${eventData.date}T${eventData.startTime}:00`);
+    const endDateTime = new Date(`${eventData.date}T${eventData.endTime}:00`);
+    
+    // Criar um evento com status tentative (provisório)
+    const event = {
+      summary: `${eventData.summary} (Disponível)`,
+      description: eventData.details || 'Clique no link para agendar este horário.',
+      startDateTime: startDateTime.toISOString(),
+      endDateTime: endDateTime.toISOString(),
+      location: 'Consultório',
+    };
+    
+    // Adicionar o evento ao calendário
+    const eventId = await addEventToCalendar(psychologistUserId, event);
+    
+    if (!eventId) {
+      console.error('Não foi possível criar o evento no Google Calendar');
+      return null;
+    }
+    
+    // Obter o token do usuário para acessar o evento
+    const userTokens = await db.select().from(googleTokens).where(eq(googleTokens.userId, psychologistUserId));
+    if (!userTokens || userTokens.length === 0) {
+      return null;
+    }
+    
+    // Obter o calendarId (normalmente "primary")
+    const calendarId = userTokens[0].calendarId || 'primary';
+    
+    // Compor o link para o evento do Google Calendar
+    // Formato: https://calendar.google.com/calendar/event?eid=EVENT_ID_BASE64
+    // Precisamos codificar o eventId em base64 para o formato que o Google Calendar espera
+    
+    // Criar link de agendamento direto
+    const eventLink = `https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=${encodeURIComponent(eventId)}&tmsrc=${encodeURIComponent(calendarId)}`;
+    
+    return eventLink;
+  } catch (error) {
+    console.error('Erro ao criar evento de agendamento:', error);
+    return null;
+  }
+}

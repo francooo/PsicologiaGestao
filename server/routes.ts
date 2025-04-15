@@ -10,6 +10,7 @@ import path from "path";
 import fs from "fs";
 import * as WhatsAppService from "./services/whatsapp";
 import googleCalendarRoutes from "./routes/google-calendar";
+import * as GoogleCalendarService from "./services/google-calendar";
 
 // Configure multer for image upload
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -1159,19 +1160,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calcular slots disponíveis
       const availableTimes = calculateAvailableSlots(start, end, psychologistAppointments, psychologist);
       
-      // Enviar via WhatsApp
-      const result = await WhatsAppService.shareAvailableTimesViaWhatsApp(
-        phoneNumber,
+      // Gerar a mensagem com links para o Google Calendar
+      const message = await formatWhatsAppMessage(
         psychologistUser.fullName,
-        availableTimes,
         customMessage || "",
+        availableTimes,
         start,
-        end
+        end,
+        parseInt(psychologistId),
+        psychologist.userId // Usuário do psicólogo para criar eventos no Google Calendar
+      );
+      
+      // Enviar via WhatsApp
+      const result = await WhatsAppService.sendWhatsAppMessage(
+        phoneNumber,
+        message
       );
       
       res.json({ 
         success: true, 
-        message: "Availability shared successfully", 
+        message: "Availability with Google Calendar links shared successfully", 
         result 
       });
     } catch (error) {
@@ -1275,15 +1283,16 @@ function calculateTimeSlots(
   return availableSlots;
 }
 
-// Helper function to format WhatsApp message
-function formatWhatsAppMessage(
+// Helper function to format WhatsApp message with Google Calendar links
+async function formatWhatsAppMessage(
   psychologistName: string,
   customMessage: string,
   availableTimes: { date: string, slots: string[] }[],
   startDate: Date,
   endDate: Date,
-  psychologistId: number
-): string {
+  psychologistId: number,
+  psychologistUserId: number
+): Promise<string> {
   const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -1295,7 +1304,8 @@ function formatWhatsAppMessage(
   message += `*Horários disponíveis - ${psychologistName}*\n`;
   message += `Período: ${dateFormatter.format(startDate)} a ${dateFormatter.format(endDate)}\n\n`;
   
-  availableTimes.forEach(item => {
+  // Processar cada dia disponível
+  for (const item of availableTimes) {
     const date = new Date(item.date);
     const formattedDate = dateFormatter.format(date);
     message += `*${formattedDate} (${getDayOfWeek(date)})*\n`;
@@ -1303,21 +1313,57 @@ function formatWhatsAppMessage(
     if (item.slots.length === 0) {
       message += "Sem horários disponíveis neste dia.\n";
     } else {
-      item.slots.forEach(slot => {
-        // Criar um link clicável para agendamento
-        const encodedDate = encodeURIComponent(item.date);
-        const encodedTime = encodeURIComponent(slot);
-        const encodedPsychologistId = encodeURIComponent(psychologistId.toString());
+      // Processar cada slot de horário
+      for (const slot of item.slots) {
+        // Extrair horas de início e fim
+        const [startTime, endTime] = slot.split(" - ");
         
-        // Criar o link para o agendamento rápido
-        const baseUrl = process.env.BASE_URL || "https://management-consultancy-psi.replit.app";
-        const bookingLink = `${baseUrl}/quick-booking?date=${encodedDate}&time=${encodedTime}&psychologist=${encodedPsychologistId}`;
+        // Criar evento no Google Calendar e obter o link
+        const eventData = {
+          summary: `Consulta com ${psychologistName}`,
+          date: item.date,
+          startTime,
+          endTime,
+          details: `Horário disponível para agendamento com ${psychologistName}. Clique para confirmar.`
+        };
         
-        message += `- ${slot} 👉 [Agendar](${bookingLink})\n`;
-      });
+        try {
+          // Tentar criar evento no Google Calendar
+          const googleCalendarLink = await GoogleCalendarService.createBookingEvent(
+            psychologistUserId, 
+            eventData
+          );
+          
+          if (googleCalendarLink) {
+            // Usar o link do Google Calendar para agendamento
+            message += `- ${slot} 👉 [Agendar via Google Calendar](${googleCalendarLink})\n`;
+          } else {
+            // Fallback para o link interno caso o Google Calendar falhe
+            const encodedDate = encodeURIComponent(item.date);
+            const encodedTime = encodeURIComponent(slot);
+            const encodedPsychologistId = encodeURIComponent(psychologistId.toString());
+            
+            const baseUrl = process.env.BASE_URL || "https://management-consultancy-psi.replit.app";
+            const bookingLink = `${baseUrl}/quick-booking?date=${encodedDate}&time=${encodedTime}&psychologist=${encodedPsychologistId}`;
+            
+            message += `- ${slot} 👉 [Agendar](${bookingLink})\n`;
+          }
+        } catch (error) {
+          console.error(`Erro ao criar evento no Google Calendar: ${error}`);
+          // Fallback para o link interno
+          const encodedDate = encodeURIComponent(item.date);
+          const encodedTime = encodeURIComponent(slot);
+          const encodedPsychologistId = encodeURIComponent(psychologistId.toString());
+          
+          const baseUrl = process.env.BASE_URL || "https://management-consultancy-psi.replit.app";
+          const bookingLink = `${baseUrl}/quick-booking?date=${encodedDate}&time=${encodedTime}&psychologist=${encodedPsychologistId}`;
+          
+          message += `- ${slot} 👉 [Agendar](${bookingLink})\n`;
+        }
+      }
     }
     message += "\n";
-  });
+  }
   
   message += "Clique nos links para agendar diretamente ou entre em contato para mais informações.";
   
