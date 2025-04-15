@@ -887,7 +887,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message || "",
         availableTimes,
         new Date(startDate),
-        new Date(endDate)
+        new Date(endDate),
+        parseInt(psychologistId)
       );
       
       // Generate WhatsApp link
@@ -1158,7 +1159,8 @@ function formatWhatsAppMessage(
   customMessage: string,
   availableTimes: { date: string, slots: string[] }[],
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  psychologistId: number
 ): string {
   const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
@@ -1173,19 +1175,28 @@ function formatWhatsAppMessage(
   
   availableTimes.forEach(item => {
     const date = new Date(item.date);
-    message += `*${dateFormatter.format(date)} (${getDayOfWeek(date)})*\n`;
+    const formattedDate = dateFormatter.format(date);
+    message += `*${formattedDate} (${getDayOfWeek(date)})*\n`;
     
     if (item.slots.length === 0) {
       message += "Sem horários disponíveis neste dia.\n";
     } else {
       item.slots.forEach(slot => {
-        message += `- ${slot}\n`;
+        // Criar um link clicável para agendamento
+        const encodedDate = encodeURIComponent(item.date);
+        const encodedTime = encodeURIComponent(slot);
+        const encodedPsychologistId = encodeURIComponent(psychologistId.toString());
+        
+        // Criar o link para o agendamento rápido
+        const bookingLink = `https://${process.env.REPL_SLUG}.replit.app/quick-booking?date=${encodedDate}&time=${encodedTime}&psychologist=${encodedPsychologistId}`;
+        
+        message += `- ${slot} 👉 [Agendar](${bookingLink})\n`;
       });
     }
     message += "\n";
   });
   
-  message += "Para agendar, entre em contato diretamente ou responda a esta mensagem.";
+  message += "Clique nos links para agendar diretamente ou entre em contato para mais informações.";
   
   return message;
 }

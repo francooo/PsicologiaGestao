@@ -10,6 +10,7 @@ import { insertAppointmentSchema } from "@shared/schema";
 import Sidebar from "@/components/sidebar";
 import MobileNav from "@/components/mobile-nav";
 import Calendar from "@/components/calendar";
+import DailyHoursView from "@/components/daily-hours-view";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,7 +68,7 @@ export default function Appointments() {
   const [isNewAppointmentDialogOpen, setIsNewAppointmentDialogOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [viewMode, setViewMode] = useState<'month' | 'day'>('month');
 
   // Format date for API requests
   const formatDateForRequest = (date: Date) => {
@@ -577,37 +578,90 @@ export default function Appointments() {
             </div>
           </div>
           
+          {/* Controle de visualização */}
+          <div className="flex items-center mb-6">
+            <div className="flex overflow-x-auto">
+              <Button 
+                variant={viewMode === 'month' ? 'default' : 'outline'} 
+                size="sm"
+                className="mr-2"
+                onClick={() => setViewMode('month')}
+              >
+                Mês
+              </Button>
+              <Button 
+                variant={viewMode === 'day' ? 'default' : 'outline'} 
+                size="sm"
+                className="mr-4"
+                onClick={() => {
+                  setViewMode('day');
+                  setSelectedDate(new Date()); // Reset para hoje
+                }}
+              >
+                Hoje
+              </Button>
+            </div>
+          </div>
+
           {isPageLoading ? (
             <div className="flex justify-center items-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
             <>
-              {/* Calendário de Agendamentos */}
-              <Calendar 
-                events={formattedAppointments}
-                month={selectedDate.getMonth()}
-                year={selectedDate.getFullYear()}
-                onDateSelect={handleDateSelect}
-                onEventClick={handleAppointmentClick}
-              />
+              {/* Visualização do dia (24 horas) */}
+              {viewMode === 'day' && (
+                <DailyHoursView 
+                  date={selectedDate}
+                  events={formattedAppointments}
+                  onAppointmentClick={handleAppointmentClick}
+                  onTimeSlotClick={(timeSlot, date) => {
+                    appointmentForm.setValue('date', formatDateForRequest(date));
+                    appointmentForm.setValue('startTime', timeSlot);
+                    
+                    // Calcular o horário de término (1 hora após)
+                    const [hours, minutes] = timeSlot.split(':');
+                    const endHour = parseInt(hours) + 1;
+                    const endTime = `${endHour.toString().padStart(2, '0')}:${minutes}`;
+                    appointmentForm.setValue('endTime', endTime);
+                    
+                    setIsNewAppointmentDialogOpen(true);
+                  }}
+                />
+              )}
               
-              {/* Legenda do Calendário */}
-              <div className="flex flex-wrap gap-4 mb-6">
-                {psychologists?.slice(0, 5).map((psychologist) => (
-                  <div key={psychologist.id} className="flex items-center">
-                    <div 
-                      className="w-4 h-4 rounded-full mr-2"
-                      style={{ 
-                        backgroundColor: 
-                          psychologist.id % 3 === 0 ? '#2D7AA9' : 
-                          psychologist.id % 3 === 1 ? '#5EB69D' : '#F8B400' 
-                      }}
-                    ></div>
-                    <span className="text-sm text-neutral-dark">{psychologist.user.fullName}</span>
+              {/* Visualização do mês (calendário) */}
+              {viewMode === 'month' && (
+                <>
+                  <Calendar 
+                    events={formattedAppointments}
+                    month={selectedDate.getMonth()}
+                    year={selectedDate.getFullYear()}
+                    onDateSelect={(date) => {
+                      handleDateSelect(date);
+                      setViewMode('day'); // Muda para visualização diária ao clicar em um dia
+                    }}
+                    onEventClick={handleAppointmentClick}
+                  />
+                  
+                  {/* Legenda do Calendário */}
+                  <div className="flex flex-wrap gap-4 mb-6">
+                    {psychologists?.slice(0, 5).map((psychologist) => (
+                      <div key={psychologist.id} className="flex items-center">
+                        <div 
+                          className="w-4 h-4 rounded-full mr-2"
+                          style={{ 
+                            backgroundColor: 
+                              psychologist.id % 3 === 0 ? '#2D7AA9' : 
+                              psychologist.id % 3 === 1 ? '#5EB69D' : '#F8B400' 
+                          }}
+                        ></div>
+                        <span className="text-sm text-neutral-dark">{psychologist.user.fullName}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
             </>
           )}
         </main>
