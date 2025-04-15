@@ -59,6 +59,7 @@ import { ptBR } from "date-fns/locale";
 export default function CashFlow() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [dateRange, setDateRange] = useState<{startDate: string, endDate: string}>(() => {
     const today = new Date();
     const startDate = startOfMonth(today);
@@ -280,6 +281,29 @@ export default function CashFlow() {
   };
 
   // For category pie charts
+  // Mapeamento de cores por categoria para melhor consistência visual
+  const categoryColors: Record<string, string> = {
+    // Receitas
+    'Consulta': '#4CAF50',
+    'Avaliação': '#8BC34A',
+    'Sessão em Grupo': '#CDDC39',
+    'Workshop': '#FFC107',
+    'Outro': '#FF9800',
+    
+    // Despesas
+    'Aluguel': '#F44336',
+    'Água': '#2196F3',
+    'Luz': '#FFEB3B',
+    'Internet': '#9C27B0',
+    'Material de Escritório': '#FF5722',
+    'Limpeza': '#00BCD4',
+    'Manutenção': '#795548',
+    'Salários': '#E91E63',
+    'Marketing': '#673AB7',
+    'Impostos': '#607D8B'
+  };
+  
+  // Cores padrão para categorias que não estejam no mapeamento
   const COLORS = [
     '#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A569BD', 
     '#5DADE2', '#45B39D', '#F4D03F', '#EB984E', '#EC7063'
@@ -553,7 +577,10 @@ export default function CashFlow() {
                             dataKey="value"
                           >
                             {summary.incomeByCategoryArray.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={categoryColors[entry.name] || COLORS[index % COLORS.length]} 
+                              />
                             ))}
                           </Pie>
                           <Tooltip formatter={(value) => formatCurrency(Number(value))} />
@@ -589,7 +616,10 @@ export default function CashFlow() {
                             dataKey="value"
                           >
                             {summary.expenseByCategoryArray.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={categoryColors[entry.name] || COLORS[index % COLORS.length]} 
+                              />
                             ))}
                           </Pie>
                           <Tooltip formatter={(value) => formatCurrency(Number(value))} />
