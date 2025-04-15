@@ -71,7 +71,7 @@ export const appointments = pgTable("appointments", {
   date: date("date").notNull(),
   startTime: time("start_time").notNull(),
   endTime: time("end_time").notNull(),
-  status: text("status").notNull().default("scheduled"), // scheduled, confirmed, canceled, completed
+  status: text("status").notNull().default("scheduled"), // scheduled, confirmed, canceled, completed, pending-confirmation (para agendamentos rápidos via WhatsApp)
   notes: text("notes"),
 });
 

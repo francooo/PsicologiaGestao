@@ -94,6 +94,8 @@ export default function DailyHoursView({
         return { color: 'bg-purple-100 text-purple-800', label: 'Concluído' };
       case 'first-session':
         return { color: 'bg-amber-100 text-amber-800', label: '1ª Sessão' };
+      case 'pending-confirmation':
+        return { color: 'bg-orange-100 text-orange-800', label: 'Solicitação via WhatsApp' };
       default:
         return { color: 'bg-gray-100 text-gray-800', label: status };
     }
