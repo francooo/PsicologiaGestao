@@ -9,6 +9,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import * as WhatsAppService from "./services/whatsapp";
+import googleCalendarRoutes from "./routes/google-calendar";
 
 // Configure multer for image upload
 const uploadDir = path.join(process.cwd(), "uploads");

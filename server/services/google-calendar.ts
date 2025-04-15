@@ -339,6 +339,12 @@ export async function listUpcomingEvents(userId: number, maxResults = 10): Promi
 /**
  * Verifica se o usuário está autenticado com o Google Calendar
  */
-export function isUserAuthenticated(userId: number): boolean {
-  return !!userTokens[userId];
+export async function isUserAuthenticated(userId: number): Promise<boolean> {
+  try {
+    const tokens = await db.select().from(googleTokens).where(eq(googleTokens.userId, userId));
+    return tokens.length > 0;
+  } catch (error) {
+    console.error('Erro ao verificar autenticação do usuário:', error);
+    return false;
+  }
 }
