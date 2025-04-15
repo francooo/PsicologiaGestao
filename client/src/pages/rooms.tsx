@@ -494,7 +494,7 @@ export default function Rooms() {
                         render={({ field }) => {
                           // Encontrar o psicólogo correspondente ao usuário logado
                           const loggedPsychologist = psychologists?.find(
-                            p => p.user.username === user?.username
+                            p => p.user?.username === user?.username
                           );
 
                           // Se encontrou e não há valor definido, define o valor do campo
@@ -504,13 +504,42 @@ export default function Rooms() {
                             }, 0);
                           }
 
+                          // Se o usuário for um psicólogo, mostramos apenas o nome dele
+                          if (user?.role === 'psychologist' && loggedPsychologist) {
+                            return (
+                              <FormItem>
+                                <FormLabel>Psicóloga</FormLabel>
+                                <div className="flex items-center border rounded-md p-2 bg-neutral-50">
+                                  <SquareUser className="mr-2 h-4 w-4 text-neutral-500" />
+                                  <span>{loggedPsychologist.user?.fullName || user.fullName}</span>
+                                  <input 
+                                    type="hidden" 
+                                    name="psychologistId" 
+                                    value={loggedPsychologist.id.toString()} 
+                                  />
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            );
+                          }
+
+                          // Filtramos os psicólogos para não mostrar o usuário logado se for admin reservando para outros
+                          const filteredPsychologists = psychologists?.filter(p => {
+                            if (user?.role === 'admin') {
+                              // Administradores podem ver todos os psicólogos
+                              return true;
+                            } else {
+                              // Outros usuários não devem ver o psicólogo atualmente logado
+                              return p.user?.username !== user?.username;
+                            }
+                          });
+
                           return (
                             <FormItem>
                               <FormLabel>Psicóloga</FormLabel>
                               <Select
                                 onValueChange={field.onChange}
                                 value={field.value || (loggedPsychologist?.id.toString() ?? '')}
-                                disabled={user?.role === 'psychologist'}
                               >
                                 <FormControl>
                                   <SelectTrigger>
@@ -518,12 +547,12 @@ export default function Rooms() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {psychologists?.map((psychologist) => (
+                                  {filteredPsychologists?.map((psychologist) => (
                                     <SelectItem
                                       key={psychologist.id}
                                       value={psychologist.id.toString()}
                                     >
-                                      {psychologist.user.fullName}
+                                      {psychologist.user?.fullName}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
