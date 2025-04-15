@@ -113,43 +113,57 @@ export default function Psychologists() {
   // Create psychologist mutation
   const createPsychologistMutation = useMutation({
     mutationFn: async (data: PsychologistFormValues) => {
-      // First create the user
-      const userResponse = await apiRequest("POST", "/api/register", {
-        fullName: data.fullName,
-        email: data.email,
-        username: data.username,
-        password: data.password,
-        role: data.role,
-        status: data.status,
-        profileImage: data.profileImage || undefined,
-      });
-      
-      const user = await userResponse.json();
-      
-      // Then create the psychologist profile
-      const psychologistResponse = await apiRequest("POST", "/api/psychologists", {
-        userId: user.id,
-        specialization: data.specialization,
-        bio: data.bio,
-        hourlyRate: parseFloat(data.hourlyRate),
-      });
-      
-      return psychologistResponse.json();
+      try {
+        // First create the user
+        const userResponse = await apiRequest("POST", "/api/register", {
+          fullName: data.fullName,
+          email: data.email,
+          username: data.username,
+          password: data.password,
+          role: data.role,
+          status: data.status,
+          profileImage: data.profileImage || undefined,
+        });
+        
+        if (!userResponse.ok) {
+          const error = await userResponse.json();
+          throw new Error(error.message || 'Erro ao criar usuário');
+        }
+        
+        const user = await userResponse.json();
+        
+        // Then create the psychologist profile
+        const psychologistResponse = await apiRequest("POST", "/api/psychologists", {
+          userId: user.id,
+          specialization: data.specialization,
+          bio: data.bio,
+          hourlyRate: parseFloat(data.hourlyRate),
+        });
+        
+        if (!psychologistResponse.ok) {
+          const error = await psychologistResponse.json();
+          throw new Error(error.message || 'Erro ao criar perfil da psicóloga');
+        }
+        
+        return psychologistResponse.json();
+      } catch (error) {
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/psychologists'] });
       toast({
-        title: "Psicóloga adicionada",
-        description: "A psicóloga foi adicionada com sucesso.",
+        title: "Sucesso!",
+        description: "A psicóloga foi cadastrada com sucesso no sistema.",
         variant: "default",
       });
       setIsNewPsychologistDialogOpen(false);
       psychologistForm.reset();
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
-        title: "Erro",
-        description: `Falha ao adicionar psicóloga: ${error.message}`,
+        title: "Erro no cadastro",
+        description: error.message || "Houve um erro ao cadastrar a psicóloga. Verifique os dados e tente novamente.",
         variant: "destructive",
       });
     }
