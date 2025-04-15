@@ -262,3 +262,62 @@ export type InsertPermission = z.infer<typeof insertPermissionSchema>;
 
 export type RolePermission = typeof rolePermissions.$inferSelect;
 export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+
+// Google Calendar Tokens
+export const googleTokens = pgTable("google_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  expiryDate: timestamp("expiry_date").notNull(),
+  calendarId: text("calendar_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertGoogleTokenSchema = createInsertSchema(googleTokens).pick({
+  userId: true,
+  accessToken: true,
+  refreshToken: true,
+  expiryDate: true,
+  calendarId: true,
+});
+
+export const googleTokensRelations = relations(googleTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [googleTokens.userId],
+    references: [users.id],
+  }),
+}));
+
+export type GoogleToken = typeof googleTokens.$inferSelect;
+export type InsertGoogleToken = z.infer<typeof insertGoogleTokenSchema>;
+
+// Appointments to Google Calendar mapping
+export const calendarEvents = pgTable("calendar_events", {
+  id: serial("id").primaryKey(),
+  appointmentId: integer("appointment_id").notNull().references(() => appointments.id),
+  googleEventId: text("google_event_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  lastSynced: timestamp("last_synced").notNull().defaultNow(),
+});
+
+export const insertCalendarEventSchema = createInsertSchema(calendarEvents).pick({
+  appointmentId: true,
+  googleEventId: true,
+  userId: true,
+});
+
+export const calendarEventsRelations = relations(calendarEvents, ({ one }) => ({
+  appointment: one(appointments, {
+    fields: [calendarEvents.appointmentId],
+    references: [appointments.id],
+  }),
+  user: one(users, {
+    fields: [calendarEvents.userId],
+    references: [users.id],
+  }),
+}));
+
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertCalendarEvent = z.infer<typeof insertCalendarEventSchema>;
