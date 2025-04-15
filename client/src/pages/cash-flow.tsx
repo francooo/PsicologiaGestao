@@ -488,11 +488,15 @@ export default function CashFlow() {
               </CardContent>
             </Card>
             
-            <Card className={`bg-gradient-to-br ${summary.balance >= 0 ? 'from-green-50 to-green-100 border-green-200' : 'from-orange-50 to-orange-100 border-orange-200'}`}>
+            <Card className={`
+              ${summary.balance >= 0 
+                ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200' 
+                : 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200'}
+            `}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center">
                   <Calendar className={`h-5 w-5 mr-2 ${summary.balance >= 0 ? 'text-green-500' : 'text-orange-500'}`} />
-                  Saldo
+                  {summary.balance >= 0 ? 'Saldo Positivo' : 'Saldo Negativo'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -503,13 +507,13 @@ export default function CashFlow() {
             </Card>
           </div>
           
-          {/* Charts Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Daily Flow Chart */}
+          {/* Charts */}
+          <div className="space-y-6">
+            {/* Daily Cash Flow Chart */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Fluxo Diário</CardTitle>
-                <CardDescription>Entradas e saídas por dia no período selecionado</CardDescription>
+                <CardTitle className="text-lg">Fluxo de Caixa Diário</CardTitle>
+                <CardDescription>Evolução de receitas e despesas no período selecionado</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-80 w-full">
@@ -517,32 +521,43 @@ export default function CashFlow() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={dailyFlowData}
-                        margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+                        margin={{
+                          top: 10,
+                          right: 10,
+                          left: 0,
+                          bottom: 0,
+                        }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                        <XAxis dataKey="displayDate" />
-                        <YAxis tickFormatter={(value) => `R$ ${value}`} />
-                        <Tooltip
-                          formatter={(value, name) => {
-                            const label = name === 'income' 
-                              ? 'Receitas' 
-                              : name === 'expense' 
-                                ? 'Despesas' 
-                                : 'Saldo';
-                            return [formatCurrency(Number(value)), label];
-                          }}
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis 
+                          dataKey="displayDate"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 12 }}
+                        />
+                        <YAxis 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 12 }}
+                          tickFormatter={(value) => formatCurrency(value).replace('R$', '').trim()}
+                        />
+                        <Tooltip 
+                          formatter={(value) => [formatCurrency(Number(value)), '']}
                           labelFormatter={(label) => `Data: ${label}`}
                         />
-                        <Legend formatter={(value) => {
-                          return value === 'income' 
-                            ? 'Receitas' 
-                            : value === 'expense' 
-                              ? 'Despesas' 
-                              : 'Saldo';
-                        }} />
-                        <Bar dataKey="income" fill="#4CAF50" name="income" />
-                        <Bar dataKey="expense" fill="#F44336" name="expense" />
-                        <Bar dataKey="balance" fill="#2196F3" name="balance" />
+                        <Legend />
+                        <Bar 
+                          name="Receitas" 
+                          dataKey="income" 
+                          fill="#4CAF50" 
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <Bar 
+                          name="Despesas" 
+                          dataKey="expense" 
+                          fill="#F44336" 
+                          radius={[4, 4, 0, 0]} 
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
@@ -562,35 +577,58 @@ export default function CashFlow() {
                   <CardTitle className="text-lg">Receitas por Categoria</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-40 w-full">
-                    {summary.incomeByCategoryArray.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={summary.incomeByCategoryArray}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={renderCustomizedLabel}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {summary.incomeByCategoryArray.map((entry, index) => (
-                              <Cell 
-                                key={`cell-${index}`} 
-                                fill={categoryColors[entry.name] || COLORS[index % COLORS.length]} 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="h-40 w-full">
+                      {summary.incomeByCategoryArray.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={summary.incomeByCategoryArray}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={renderCustomizedLabel}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                            >
+                              {summary.incomeByCategoryArray.map((entry, index) => (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={categoryColors[entry.name] || COLORS[index % COLORS.length]} 
+                                />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-neutral-dark">Sem dados para exibir</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col justify-center">
+                      {summary.incomeByCategoryArray.length > 0 ? (
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {summary.incomeByCategoryArray.map((entry, index) => (
+                            <div key={`legend-${index}`} className="flex items-center">
+                              <div 
+                                className="w-3 h-3 mr-2 rounded-sm" 
+                                style={{ backgroundColor: categoryColors[entry.name] || COLORS[index % COLORS.length] }}
                               />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <p className="text-neutral-dark">Sem dados para exibir</p>
-                      </div>
-                    )}
+                              <span className="text-xs flex-1">{entry.name}</span>
+                              <span className="text-xs font-semibold">{formatCurrency(Number(entry.value))}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <p className="text-neutral-dark text-xs">Sem categorias para exibir</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -601,35 +639,58 @@ export default function CashFlow() {
                   <CardTitle className="text-lg">Despesas por Categoria</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-40 w-full">
-                    {summary.expenseByCategoryArray.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={summary.expenseByCategoryArray}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={renderCustomizedLabel}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {summary.expenseByCategoryArray.map((entry, index) => (
-                              <Cell 
-                                key={`cell-${index}`} 
-                                fill={categoryColors[entry.name] || COLORS[index % COLORS.length]} 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="h-40 w-full">
+                      {summary.expenseByCategoryArray.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={summary.expenseByCategoryArray}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={renderCustomizedLabel}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                            >
+                              {summary.expenseByCategoryArray.map((entry, index) => (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={categoryColors[entry.name] || COLORS[index % COLORS.length]} 
+                                />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-neutral-dark">Sem dados para exibir</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col justify-center">
+                      {summary.expenseByCategoryArray.length > 0 ? (
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {summary.expenseByCategoryArray.map((entry, index) => (
+                            <div key={`legend-${index}`} className="flex items-center">
+                              <div 
+                                className="w-3 h-3 mr-2 rounded-sm" 
+                                style={{ backgroundColor: categoryColors[entry.name] || COLORS[index % COLORS.length] }}
                               />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <p className="text-neutral-dark">Sem dados para exibir</p>
-                      </div>
-                    )}
+                              <span className="text-xs flex-1">{entry.name}</span>
+                              <span className="text-xs font-semibold">{formatCurrency(Number(entry.value))}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <p className="text-neutral-dark text-xs">Sem categorias para exibir</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
