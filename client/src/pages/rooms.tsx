@@ -498,19 +498,34 @@ export default function Rooms() {
                           );
 
                           // Se encontrou, define o valor do campo
-                          if (loggedPsychologist) {
+                          if (loggedPsychologist && !field.value) {
                             field.onChange(loggedPsychologist.id.toString());
                           }
 
                           return (
                             <FormItem>
                               <FormLabel>Psicóloga</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  value={loggedPsychologist?.user.fullName || 'Não encontrado'} 
-                                  disabled
-                                />
-                              </FormControl>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={loggedPsychologist?.id.toString()}
+                                value={field.value.toString()}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione uma psicóloga" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {psychologists?.map((psychologist) => (
+                                    <SelectItem
+                                      key={psychologist.id}
+                                      value={psychologist.id.toString()}
+                                    >
+                                      {psychologist.user.fullName}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           );
