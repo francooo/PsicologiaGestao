@@ -83,19 +83,11 @@ export function formatPhoneNumber(phone: string): string | null {
 /**
  * Compartilha horários disponíveis de um psicólogo via WhatsApp
  * @param phoneNumber Número do cliente
- * @param psychologistName Nome do psicólogo
- * @param availableTimes Horários disponíveis organizados por data
- * @param customMessage Mensagem personalizada para acompanhar os horários
- * @param startDate Data inicial do período
- * @param endDate Data final do período
+ * @param message Mensagem formatada para enviar (com links do Google Calendar)
  */
-export async function shareAvailableTimesViaWhatsApp(
-  phoneNumber: string, 
-  psychologistName: string, 
-  availableTimes: { date: string, slots: string[] }[],
-  customMessage: string,
-  startDate: Date,
-  endDate: Date
+export async function sendWhatsAppAvailability(
+  phoneNumber: string,
+  message: string
 ) {
   // Formata o número de telefone
   const formattedPhone = formatPhoneNumber(phoneNumber);
@@ -103,17 +95,8 @@ export async function shareAvailableTimesViaWhatsApp(
     throw new Error('Número de telefone inválido');
   }
   
-  // Gera a mensagem formatada
-  const formattedMessage = formatWhatsAppMessage(
-    psychologistName,
-    customMessage,
-    availableTimes,
-    startDate,
-    endDate
-  );
-  
-  // Envia a mensagem
-  return sendWhatsAppMessage(formattedPhone, formattedMessage);
+  // Envia a mensagem formatada externamente
+  return sendWhatsAppMessage(formattedPhone, message);
 }
 
 /**

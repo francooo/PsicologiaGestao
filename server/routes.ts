@@ -1172,7 +1172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       // Enviar via WhatsApp
-      const result = await WhatsAppService.sendWhatsAppMessage(
+      const result = await WhatsAppService.sendWhatsAppAvailability(
         phoneNumber,
         message
       );
