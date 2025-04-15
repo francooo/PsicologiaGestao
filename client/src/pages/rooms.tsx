@@ -216,25 +216,25 @@ export default function Rooms() {
   // Find out if a room is booked at this time
   const isRoomBooked = (roomId: number, timeSlot: string) => {
     if (!roomBookings) return false;
-    
+
     const [startHour, startMinute] = timeSlot.split(':').map(Number);
     const slotStart = new Date();
     slotStart.setHours(startHour, startMinute, 0);
-    
+
     // Assuming slots are 1 hour
     const slotEnd = new Date(slotStart);
     slotEnd.setHours(slotStart.getHours() + 1);
-    
+
     // Format times for comparison
     const slotStartFormatted = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
     const slotEndFormatted = `${slotEnd.getHours().toString().padStart(2, '0')}:${slotEnd.getMinutes().toString().padStart(2, '0')}`;
-    
+
     return roomBookings.some(booking => {
       if (booking.roomId !== roomId) return false;
-      
+
       const bookingStartTime = booking.startTime;
       const bookingEndTime = booking.endTime;
-      
+
       // Check for overlap
       return (
         (slotStartFormatted < bookingEndTime && slotEndFormatted > bookingStartTime)
@@ -245,33 +245,33 @@ export default function Rooms() {
   // Get who booked a room at this time
   const getBookingInfo = (roomId: number, timeSlot: string) => {
     if (!roomBookings) return null;
-    
+
     const [startHour, startMinute] = timeSlot.split(':').map(Number);
     const slotStart = new Date();
     slotStart.setHours(startHour, startMinute, 0);
-    
+
     // Assuming slots are 1 hour
     const slotEnd = new Date(slotStart);
     slotEnd.setHours(slotStart.getHours() + 1);
-    
+
     // Format times for comparison
     const slotStartFormatted = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
     const slotEndFormatted = `${slotEnd.getHours().toString().padStart(2, '0')}:${slotEnd.getMinutes().toString().padStart(2, '0')}`;
-    
+
     const booking = roomBookings.find(booking => {
       if (booking.roomId !== roomId) return false;
-      
+
       const bookingStartTime = booking.startTime;
       const bookingEndTime = booking.endTime;
-      
+
       // Check for overlap
       return (
         (slotStartFormatted < bookingEndTime && slotEndFormatted > bookingStartTime)
       );
     });
-    
+
     if (!booking) return null;
-    
+
     return {
       psychologistName: booking.psychologist?.user?.fullName || 'Não definido',
       purpose: booking.purpose || 'Reserva',
@@ -295,10 +295,10 @@ export default function Rooms() {
   return (
     <div className="flex h-screen bg-neutral-lightest">
       <Sidebar />
-      
+
       <div className="flex-1 overflow-x-hidden ml-0 md:ml-64 pt-16 md:pt-0">
         <MobileNav />
-        
+
         <main className="p-4 md:p-6 pb-20 md:pb-6">
           {/* Rooms Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
@@ -315,7 +315,7 @@ export default function Rooms() {
                 <Plus className="mr-2 h-4 w-4" />
                 Reservar Sala
               </Button>
-              
+
               <Dialog open={isNewRoomDialogOpen} onOpenChange={setIsNewRoomDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="flex items-center">
@@ -330,7 +330,7 @@ export default function Rooms() {
                       Preencha os detalhes para adicionar uma nova sala.
                     </DialogDescription>
                   </DialogHeader>
-                  
+
                   <Form {...roomForm}>
                     <form onSubmit={roomForm.handleSubmit(onRoomSubmit)} className="space-y-4 mt-4">
                       <FormField
@@ -346,7 +346,7 @@ export default function Rooms() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={roomForm.control}
@@ -361,7 +361,7 @@ export default function Rooms() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={roomForm.control}
                           name="squareMeters"
@@ -376,7 +376,7 @@ export default function Rooms() {
                           )}
                         />
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={roomForm.control}
@@ -395,7 +395,7 @@ export default function Rooms() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={roomForm.control}
                           name="hasAirConditioning"
@@ -414,7 +414,7 @@ export default function Rooms() {
                           )}
                         />
                       </div>
-                      
+
                       <FormField
                         control={roomForm.control}
                         name="imageUrl"
@@ -428,7 +428,7 @@ export default function Rooms() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <DialogFooter>
                         <Button type="submit" disabled={createRoomMutation.isPending}>
                           {createRoomMutation.isPending ? (
@@ -445,7 +445,7 @@ export default function Rooms() {
                   </Form>
                 </DialogContent>
               </Dialog>
-              
+
               <Dialog open={isBookingDialogOpen} onOpenChange={setIsBookingDialogOpen}>
                 <DialogContent>
                   <DialogHeader>
@@ -454,7 +454,7 @@ export default function Rooms() {
                       Preencha os detalhes para reservar uma sala.
                     </DialogDescription>
                   </DialogHeader>
-                  
+
                   <Form {...bookingForm}>
                     <form onSubmit={bookingForm.handleSubmit(onBookingSubmit)} className="space-y-4 mt-4">
                       <FormField
@@ -487,7 +487,7 @@ export default function Rooms() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={bookingForm.control}
                         name="psychologistId"
@@ -497,9 +497,11 @@ export default function Rooms() {
                             p => p.user.username === user?.username
                           );
 
-                          // Se encontrou, define o valor do campo
+                          // Se encontrou e não há valor definido, define o valor do campo
                           if (loggedPsychologist && !field.value) {
-                            field.onChange(loggedPsychologist.id.toString());
+                            setTimeout(() => {
+                              field.onChange(loggedPsychologist.id.toString());
+                            }, 0);
                           }
 
                           return (
@@ -507,8 +509,8 @@ export default function Rooms() {
                               <FormLabel>Psicóloga</FormLabel>
                               <Select
                                 onValueChange={field.onChange}
-                                defaultValue={loggedPsychologist?.id.toString()}
-                                value={field.value.toString()}
+                                value={field.value || (loggedPsychologist?.id.toString() ?? '')}
+                                disabled={user?.role === 'psychologist'}
                               >
                                 <FormControl>
                                   <SelectTrigger>
@@ -531,7 +533,7 @@ export default function Rooms() {
                           );
                         }}
                       />
-                      
+
                       <div className="grid grid-cols-3 gap-4">
                         <FormField
                           control={bookingForm.control}
@@ -546,7 +548,7 @@ export default function Rooms() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={bookingForm.control}
                           name="startTime"
@@ -560,7 +562,7 @@ export default function Rooms() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={bookingForm.control}
                           name="endTime"
@@ -575,7 +577,7 @@ export default function Rooms() {
                           )}
                         />
                       </div>
-                      
+
                       <FormField
                         control={bookingForm.control}
                         name="purpose"
@@ -593,7 +595,7 @@ export default function Rooms() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <DialogFooter>
                         <Button type="submit" disabled={createBookingMutation.isPending}>
                           {createBookingMutation.isPending ? (
@@ -612,7 +614,7 @@ export default function Rooms() {
               </Dialog>
             </div>
           </div>
-          
+
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -627,45 +629,45 @@ export default function Rooms() {
                     const roomBookingsForThisRoom = roomBookings?.filter(
                       booking => booking.roomId === room.id
                     ) || [];
-                    
+
                     const isCurrentlyBooked = roomBookingsForThisRoom.some(booking => {
                       const now = new Date();
                       const bookingDate = new Date(booking.date).toISOString().split('T')[0];
                       const todayDate = now.toISOString().split('T')[0];
-                      
+
                       if (bookingDate !== todayDate) return false;
-                      
+
                       const [startHour, startMinute] = booking.startTime.split(':').map(Number);
                       const [endHour, endMinute] = booking.endTime.split(':').map(Number);
-                      
+
                       const bookingStart = new Date(now);
                       bookingStart.setHours(startHour, startMinute, 0);
-                      
+
                       const bookingEnd = new Date(now);
                       bookingEnd.setHours(endHour, endMinute, 0);
-                      
+
                       return now >= bookingStart && now < bookingEnd;
                     });
-                    
+
                     const nextBooking = roomBookingsForThisRoom
                       .filter(booking => {
                         const bookingDate = new Date(booking.date).toISOString().split('T')[0];
                         const todayDate = new Date().toISOString().split('T')[0];
                         if (bookingDate !== todayDate) return false;
-                        
+
                         const [startHour, startMinute] = booking.startTime.split(':').map(Number);
                         const bookingStart = new Date();
                         bookingStart.setHours(startHour, startMinute, 0);
-                        
+
                         return bookingStart > new Date();
                       })
                       .sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
-                    
+
                     // Calculate occupancy rate
                     const occupancyRate = timeSlots.length 
                       ? roomBookingsForThisRoom.length / timeSlots.length * 100 
                       : 0;
-                    
+
                     return (
                       <div key={room.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
                         <div className="relative">
@@ -751,7 +753,7 @@ export default function Rooms() {
                   </div>
                 )}
               </div>
-              
+
               {/* Calendário de Reservas */}
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <div className="flex justify-between items-center mb-4">
@@ -766,7 +768,7 @@ export default function Rooms() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -784,7 +786,7 @@ export default function Rooms() {
                           {rooms?.map((room) => {
                             const booked = isRoomBooked(room.id, timeSlot);
                             const bookingInfo = getBookingInfo(room.id, timeSlot);
-                            
+
                             return (
                               <TableCell key={`${room.id}-${timeSlot}`} className="text-center">
                                 {booked ? (
