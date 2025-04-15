@@ -330,10 +330,50 @@ export default function CashFlow() {
               <h1 className="text-2xl font-bold text-neutral-darkest">Fluxo de Caixa</h1>
               <p className="text-neutral-dark">Análise detalhada das receitas e despesas</p>
             </div>
-            <div className="flex mt-4 md:mt-0 space-x-2">
+            <div className="flex flex-wrap mt-4 md:mt-0 gap-2">
               <Button variant="outline" onClick={() => navigate("/financial")}>
                 <BarChart3 className="mr-2 h-4 w-4" />
                 Voltar ao Financeiro
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/transactions/generate-sample-data', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      }
+                    });
+                    
+                    if (res.ok) {
+                      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+                      toast({
+                        title: "Sucesso",
+                        description: "Dados de exemplo criados com sucesso",
+                        variant: "default"
+                      });
+                      
+                      // Recarrega a página para mostrar os novos dados
+                      setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                      toast({
+                        title: "Erro",
+                        description: "Falha ao criar dados de exemplo",
+                        variant: "destructive"
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Erro",
+                      description: "Falha ao criar dados de exemplo",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Gerar Dados de Exemplo
               </Button>
               <Button>
                 <FileDown className="mr-2 h-4 w-4" />

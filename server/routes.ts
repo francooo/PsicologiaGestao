@@ -488,6 +488,154 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error deleting transaction" });
     }
   });
+  
+  // API para gerar dados de exemplo para testes
+  app.post("/api/transactions/generate-sample-data", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const user = req.user;
+      const today = new Date();
+      const lastMonth = new Date(today);
+      lastMonth.setMonth(today.getMonth() - 1);
+      
+      // Mês atual - Receitas
+      await storage.createTransaction({
+        description: "Consulta - Pedro Santos",
+        amount: 150,
+        date: new Date().toISOString().split('T')[0],
+        type: "income",
+        category: "Consulta",
+        responsibleId: user.id
+      });
+      
+      await storage.createTransaction({
+        description: "Consulta - Maria Oliveira",
+        amount: 150,
+        date: new Date().toISOString().split('T')[0],
+        type: "income",
+        category: "Consulta",
+        responsibleId: user.id
+      });
+      
+      await storage.createTransaction({
+        description: "Avaliação - João Pereira",
+        amount: 200,
+        date: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 5).toISOString().split('T')[0],
+        type: "income",
+        category: "Avaliação",
+        responsibleId: user.id
+      });
+      
+      await storage.createTransaction({
+        description: "Workshop de Mindfulness",
+        amount: 500,
+        date: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 10).toISOString().split('T')[0],
+        type: "income",
+        category: "Workshop",
+        responsibleId: user.id
+      });
+      
+      // Mês atual - Despesas
+      await storage.createTransaction({
+        description: "Aluguel do Consultório",
+        amount: 2500,
+        date: new Date(today.getFullYear(), today.getMonth(), 5).toISOString().split('T')[0],
+        type: "expense",
+        category: "Aluguel",
+        responsibleId: user.id
+      });
+      
+      await storage.createTransaction({
+        description: "Conta de Luz",
+        amount: 320,
+        date: new Date(today.getFullYear(), today.getMonth(), 7).toISOString().split('T')[0],
+        type: "expense",
+        category: "Luz",
+        responsibleId: user.id
+      });
+      
+      await storage.createTransaction({
+        description: "Internet",
+        amount: 150,
+        date: new Date(today.getFullYear(), today.getMonth(), 8).toISOString().split('T')[0],
+        type: "expense",
+        category: "Internet",
+        responsibleId: user.id
+      });
+      
+      await storage.createTransaction({
+        description: "Material de Escritório",
+        amount: 230,
+        date: new Date(today.getFullYear(), today.getMonth(), 12).toISOString().split('T')[0],
+        type: "expense",
+        category: "Material de Escritório",
+        responsibleId: user.id
+      });
+      
+      // Mês passado - Receitas
+      await storage.createTransaction({
+        description: "Consulta - Carlos Silva",
+        amount: 150,
+        date: new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 15).toISOString().split('T')[0],
+        type: "income",
+        category: "Consulta",
+        responsibleId: user.id
+      });
+      
+      await storage.createTransaction({
+        description: "Consulta - Ana Rodrigues",
+        amount: 150,
+        date: new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 18).toISOString().split('T')[0],
+        type: "income",
+        category: "Consulta",
+        responsibleId: user.id
+      });
+      
+      await storage.createTransaction({
+        description: "Sessão em Grupo - Ansiedade",
+        amount: 400,
+        date: new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 22).toISOString().split('T')[0],
+        type: "income",
+        category: "Sessão em Grupo",
+        responsibleId: user.id
+      });
+      
+      // Mês passado - Despesas
+      await storage.createTransaction({
+        description: "Aluguel do Consultório",
+        amount: 2500,
+        date: new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 5).toISOString().split('T')[0],
+        type: "expense",
+        category: "Aluguel",
+        responsibleId: user.id
+      });
+      
+      await storage.createTransaction({
+        description: "Conta de Luz",
+        amount: 290,
+        date: new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 7).toISOString().split('T')[0],
+        type: "expense",
+        category: "Luz",
+        responsibleId: user.id
+      });
+      
+      await storage.createTransaction({
+        description: "Internet",
+        amount: 150,
+        date: new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 9).toISOString().split('T')[0],
+        type: "expense",
+        category: "Internet",
+        responsibleId: user.id
+      });
+      
+      res.status(201).json({ message: "Dados de exemplo criados com sucesso" });
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao gerar dados de exemplo" });
+    }
+  });
 
   // Room bookings routes
   app.get("/api/room-bookings", async (req, res) => {
