@@ -350,6 +350,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to convert time string to minutes for comparison
+  function timeToMinutes(timeStr: string): number {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+  
+  // Handle quick booking from shared WhatsApp links - no authentication required
+  app.post("/api/appointments/quick-book", async (req, res) => {
+    try {
+      const { date, startTime, endTime, patientName, psychologistId, roomId, status, notes } = req.body;
+      
+      // Validate required fields
+      if (!date || !startTime || !endTime || !patientName || !psychologistId) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Check if psychologist exists
+      const psychologist = await storage.getPsychologist(parseInt(psychologistId));
+      if (!psychologist) {
+        return res.status(404).json({ message: "Psychologist not found" });
+      }
+      
+      // Check if room exists and is available
+      const isRoomAvailable = await storage.checkRoomAvailability(
+        roomId || 1, // Default to room 1 if not specified
+        new Date(date),
+        startTime,
+        endTime
+      );
+      
+      if (!isRoomAvailable) {
+        return res.status(409).json({ 
+          message: "A sala não está disponível neste horário. Por favor, escolha outro horário." 
+        });
+      }
+      
+      // Check for time slot conflicts with the psychologist
+      const existingAppointments = await storage.getAppointmentsByDate(date);
+      const isTimeSlotTaken = existingAppointments.some(app => {
+        // Check if time slots overlap for the same psychologist
+        if (app.psychologistId !== parseInt(psychologistId)) return false;
+        
+        // Convert times to minutes for easier comparison
+        const appStart = timeToMinutes(app.startTime);
+        const appEnd = timeToMinutes(app.endTime);
+        const newStart = timeToMinutes(startTime);
+        const newEnd = timeToMinutes(endTime);
+        
+        // Check for overlap
+        return (newStart < appEnd && newEnd > appStart);
+      });
+      
+      if (isTimeSlotTaken) {
+        return res.status(409).json({ 
+          message: "Este horário já foi agendado. Por favor, escolha outro horário." 
+        });
+      }
+      
+      // Create appointment with "pending-confirmation" status
+      const appointmentData = {
+        date,
+        startTime,
+        endTime,
+        patientName,
+        psychologistId: parseInt(psychologistId),
+        roomId: roomId || 1, // Default to room 1 if not specified
+        status: "pending-confirmation", // Special status for quick bookings
+        notes: notes || ""
+      };
+      
+      const appointment = await storage.createAppointment(appointmentData);
+      
+      // Also create a room booking
+      await storage.createRoomBooking({
+        roomId: appointmentData.roomId,
+        psychologistId: appointmentData.psychologistId,
+        date: appointmentData.date,
+        startTime: appointmentData.startTime,
+        endTime: appointmentData.endTime,
+        purpose: `Agendamento online com ${appointmentData.patientName}`
+      });
+      
+      res.status(201).json({ 
+        success: true,
+        message: "Agendamento enviado com sucesso",
+        appointment
+      });
+    } catch (error) {
+      console.error("Error processing quick booking:", error);
+      res.status(500).json({ message: "Erro ao processar a solicitação de agendamento" });
+    }
+  });
+
   app.put("/api/appointments/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
