@@ -1328,26 +1328,14 @@ async function formatWhatsAppMessage(
         };
         
         try {
-          // Tentar criar evento no Google Calendar
-          const googleCalendarLink = await GoogleCalendarService.createBookingEvent(
+          // Usar o link fixo de agendamento do Google Calendar
+          const googleCalendarLink = GoogleCalendarService.getAppointmentSchedulingLink(
             psychologistUserId, 
             eventData
           );
           
-          if (googleCalendarLink) {
-            // Usar o link do Google Calendar para agendamento
-            message += `- ${slot} 👉 [Agendar via Google Calendar](${googleCalendarLink})\n`;
-          } else {
-            // Fallback para o link interno caso o Google Calendar falhe
-            const encodedDate = encodeURIComponent(item.date);
-            const encodedTime = encodeURIComponent(slot);
-            const encodedPsychologistId = encodeURIComponent(psychologistId.toString());
-            
-            const baseUrl = process.env.BASE_URL || "https://management-consultancy-psi.replit.app";
-            const bookingLink = `${baseUrl}/quick-booking?date=${encodedDate}&time=${encodedTime}&psychologist=${encodedPsychologistId}`;
-            
-            message += `- ${slot} 👉 [Agendar](${bookingLink})\n`;
-          }
+          // Usar o link do Google Calendar para agendamento
+          message += `- ${slot} 👉 [Agendar via Google Calendar](${googleCalendarLink})\n`;
         } catch (error) {
           console.error(`Erro ao criar evento no Google Calendar: ${error}`);
           // Fallback para o link interno
