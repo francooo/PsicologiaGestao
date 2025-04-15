@@ -74,15 +74,7 @@ export default function Dashboard() {
   // Calculate financial summary
   const financialSummary = calculateFinancialSummary(transactions);
 
-  // Mock data for chart
-  const financialChartData = [
-    { month: 'Jan', income: 22450, expenses: 7800 },
-    { month: 'Fev', income: 24100, expenses: 8100 },
-    { month: 'Mar', income: 23800, expenses: 7950 },
-    { month: 'Abr', income: 25300, expenses: 8250 },
-    { month: 'Mai', income: 26100, expenses: 8300 },
-    { month: 'Jun', income: 28450, expenses: 8350 },
-  ];
+
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -342,65 +334,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Financial Chart */}
-                <div className="bg-white rounded-lg shadow-sm p-6 lg:col-span-3">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-neutral-darkest">Evolução Financeira</h3>
-                    <div className="flex space-x-2">
-                      <button className="px-3 py-1 border border-neutral-light rounded-md text-sm text-neutral-dark hover:bg-neutral-lightest">1M</button>
-                      <button className="px-3 py-1 border border-primary rounded-md text-sm text-primary bg-primary bg-opacity-5 hover:bg-opacity-10">3M</button>
-                      <button className="px-3 py-1 border border-neutral-light rounded-md text-sm text-neutral-dark hover:bg-neutral-lightest">6M</button>
-                      <button className="px-3 py-1 border border-neutral-light rounded-md text-sm text-neutral-dark hover:bg-neutral-lightest">1A</button>
-                    </div>
-                  </div>
-                  
-                  <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart
-                        data={financialChartData}
-                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                      >
-                        <defs>
-                          <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#4CAF50" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#4CAF50" stopOpacity={0.1}/>
-                          </linearGradient>
-                          <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#F44336" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#F44336" stopOpacity={0.1}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                        <XAxis dataKey="month" axisLine={false} tickLine={false} />
-                        <YAxis 
-                          axisLine={false} 
-                          tickLine={false} 
-                          tickFormatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`}
-                        />
-                        <Tooltip
-                          formatter={(value) => [`R$ ${Number(value).toLocaleString('pt-BR')}`, undefined]}
-                          labelFormatter={(label) => `Mês: ${label}`}
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="income" 
-                          stroke="#4CAF50" 
-                          fillOpacity={1} 
-                          fill="url(#colorIncome)" 
-                          name="Receitas"
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="expenses" 
-                          stroke="#F44336" 
-                          fillOpacity={1} 
-                          fill="url(#colorExpenses)" 
-                          name="Despesas"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
+
               </div>
             </>
           )}
