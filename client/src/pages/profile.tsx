@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, differenceInYears } from "date-fns";
-import { CalendarIcon, UserCircle, Phone, Calendar as CalendarIcon2, Clock, Users } from "lucide-react";
+import { CalendarIcon, UserCircle, Phone, Calendar as CalendarIcon2, Clock, Users, Home, ArrowLeft, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -119,7 +119,7 @@ export default function ProfilePage() {
   };
 
   const onSubmit = (values: z.infer<typeof ProfileSchema>) => {
-    updateProfileMutation.mutate(values);
+    handleProfileUpdate(values);
   };
 
   // Calcular estatísticas
@@ -128,9 +128,62 @@ export default function ProfilePage() {
   const createdAt = new Date();
   const platformTimeInMonths = 0; // Valor fixo para demonstração
 
+  // Estado para mostrar notificação de sucesso
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [, navigate] = useLocation();
+
+  // Atualiza o tratamento da mutação para exibir a notificação de sucesso
+  const handleProfileUpdate = (values: z.infer<typeof ProfileSchema>) => {
+    updateProfileMutation.mutate(values, {
+      onSuccess: () => {
+        setShowSuccess(true);
+        // Invalida a consulta do usuário para atualizar os dados
+        queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      }
+    });
+  };
+
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-6">Seu Perfil</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Seu Perfil</h1>
+        <Button
+          variant="outline"
+          onClick={() => navigate("/")}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Voltar ao Dashboard</span>
+        </Button>
+      </div>
+      
+      {/* Notificação de sucesso */}
+      {showSuccess && (
+        <div className="bg-green-50 border border-green-200 text-green-700 rounded-md p-4 mb-6 flex justify-between items-center">
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 mr-2" />
+            <span>Perfil atualizado com sucesso!</span>
+          </div>
+          <div className="flex space-x-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/")}
+              className="flex items-center gap-1"
+            >
+              <Home className="h-4 w-4" />
+              Ir para Dashboard
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSuccess(false)}
+            >
+              ✕
+            </Button>
+          </div>
+        </div>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Formulário de perfil */}
