@@ -348,24 +348,33 @@ export default function Financial() {
         
         <main className="p-4 md:p-6 pb-20 md:pb-6">
           {/* Financial Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-neutral-darkest">Financeiro</h1>
-              <p className="text-neutral-dark">Gestão financeira do consultório</p>
+          <div className="flex flex-col mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h1 className="text-2xl font-bold text-neutral-darkest">Financeiro</h1>
+                <p className="text-neutral-dark">Gestão financeira do consultório</p>
+              </div>
             </div>
-            <div className="flex flex-wrap mt-4 md:mt-0 gap-2">
+            
+            {/* Ações separadas em linha própria */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
               <Button 
                 variant="outline" 
+                size="sm"
                 onClick={() => window.location.href = '/cash-flow'}
-                className="flex items-center"
+                className="h-9 text-xs"
               >
-                <BarChart3 className="mr-2 h-4 w-4" />
-                Fluxo de Caixa Detalhado
+                <BarChart3 className="mr-1.5 h-3.5 w-3.5" />
+                Fluxo de Caixa
               </Button>
+              
               <Dialog open={isNewIncomeDialogOpen} onOpenChange={setIsNewIncomeDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-success hover:bg-success/80 flex items-center">
-                    <Plus className="mr-2 h-4 w-4" />
+                  <Button 
+                    className="bg-green-600 hover:bg-green-700 h-9 text-xs"
+                    size="sm"
+                  >
+                    <Plus className="mr-1.5 h-3.5 w-3.5" />
                     Nova Receita
                   </Button>
                 </DialogTrigger>
@@ -505,8 +514,11 @@ export default function Financial() {
               
               <Dialog open={isNewExpenseDialogOpen} onOpenChange={setIsNewExpenseDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-error hover:bg-error/80 flex items-center">
-                    <Minus className="mr-2 h-4 w-4" />
+                  <Button 
+                    className="bg-red-600 hover:bg-red-700 h-9 text-xs"
+                    size="sm"
+                  >
+                    <Minus className="mr-1.5 h-3.5 w-3.5" />
                     Nova Despesa
                   </Button>
                 </DialogTrigger>

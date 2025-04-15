@@ -456,74 +456,53 @@ export default function CashFlow() {
         <MobileNav />
         
         <main className="p-4 md:p-6 pb-20 md:pb-6">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-neutral-darkest">Fluxo de Caixa</h1>
-              <p className="text-neutral-dark">Análise detalhada das receitas e despesas</p>
+          {/* Header com título */}
+          <div className="flex flex-col mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h1 className="text-2xl font-bold text-neutral-darkest">Fluxo de Caixa</h1>
+                <p className="text-neutral-dark">Análise detalhada das receitas e despesas</p>
+              </div>
+              <div className="hidden md:flex items-center space-x-2">
+                <Button variant="outline" size="sm" onClick={() => navigate("/financial")} className="h-8 px-3">
+                  <BarChart3 className="mr-1.5 h-3.5 w-3.5" />
+                  <span className="text-xs">Voltar</span>
+                </Button>
+              </div>
             </div>
-            <div className="flex flex-wrap mt-4 md:mt-0 gap-2">
-              <Button variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => {
-                  // Abrir modal para adicionar nova entrada (receita)
+            
+            {/* Ações separadas em linha própria */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+              <Button 
+                variant="default" 
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 h-9 text-xs" 
+                onClick={() => {
                   setIsAddTransactionOpen(true);
                   setTransactionType('income');
-              }}>
-                <ArrowDown className="mr-2 h-4 w-4" />
-                Registrar Entrada
-              </Button>
-              <Button variant="default" className="bg-red-600 hover:bg-red-700" onClick={() => {
-                  // Abrir modal para adicionar nova saída (despesa)
-                  setIsAddTransactionOpen(true);
-                  setTransactionType('expense');
-              }}>
-                <ArrowUp className="mr-2 h-4 w-4" />
-                Registrar Saída
-              </Button>
-              <Button variant="outline" onClick={() => navigate("/financial")}>
-                <BarChart3 className="mr-2 h-4 w-4" />
-                Voltar ao Financeiro
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={async () => {
-                  try {
-                    const res = await fetch('/api/transactions/generate-sample-data', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json'
-                      }
-                    });
-                    
-                    if (res.ok) {
-                      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-                      toast({
-                        title: "Sucesso",
-                        description: "Dados de exemplo criados com sucesso",
-                        variant: "default"
-                      });
-                      
-                      // Recarrega a página para mostrar os novos dados
-                      setTimeout(() => window.location.reload(), 1000);
-                    } else {
-                      toast({
-                        title: "Erro",
-                        description: "Falha ao criar dados de exemplo",
-                        variant: "destructive"
-                      });
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Erro",
-                      description: "Falha ao criar dados de exemplo",
-                      variant: "destructive"
-                    });
-                  }
                 }}
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Gerar Dados de Exemplo
+                <ArrowDown className="mr-1.5 h-3.5 w-3.5" />
+                Registrar Entrada
               </Button>
+              
               <Button 
+                variant="default" 
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 h-9 text-xs" 
+                onClick={() => {
+                  setIsAddTransactionOpen(true);
+                  setTransactionType('expense');
+                }}
+              >
+                <ArrowUp className="mr-1.5 h-3.5 w-3.5" />
+                Registrar Saída
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="h-9 text-xs"
                 onClick={() => {
                   // Preparar os dados para exportação
                   if (filteredTransactions.length === 0) {
@@ -570,8 +549,59 @@ export default function CashFlow() {
                   });
                 }}
               >
-                <FileDown className="mr-2 h-4 w-4" />
-                Exportar Relatório
+                <FileDown className="mr-1.5 h-3.5 w-3.5" />
+                Exportar CSV
+              </Button>
+              
+              <Button 
+                variant="outline"
+                size="sm"
+                className="h-9 text-xs"
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/transactions/generate-sample-data', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      }
+                    });
+                    
+                    if (res.ok) {
+                      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+                      toast({
+                        title: "Sucesso",
+                        description: "Dados de exemplo criados com sucesso",
+                        variant: "default"
+                      });
+                      
+                      // Recarrega a página para mostrar os novos dados
+                      setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                      toast({
+                        title: "Erro",
+                        description: "Falha ao criar dados de exemplo",
+                        variant: "destructive"
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Erro",
+                      description: "Falha ao criar dados de exemplo",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+              >
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Gerar Exemplos
+              </Button>
+            </div>
+            
+            {/* Botão de voltar apenas para mobile */}
+            <div className="flex md:hidden items-center mb-2">
+              <Button variant="outline" size="sm" onClick={() => navigate("/financial")} className="w-full h-8">
+                <BarChart3 className="mr-1.5 h-3.5 w-3.5" />
+                <span className="text-xs">Voltar ao Financeiro</span>
               </Button>
             </div>
           </div>
