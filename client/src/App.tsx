@@ -25,6 +25,7 @@ function Router() {
       <ProtectedRoute path="/psychologists" component={Psychologists} />
       <ProtectedRoute path="/rooms" component={Rooms} />
       <ProtectedRoute path="/financial" component={Financial} />
+      <ProtectedRoute path="/cash-flow" component={CashFlow} />
       <ProtectedRoute path="/permissions" component={Permissions} />
       <ProtectedRoute path="/profile" component={Profile} />
       <Route path="/auth" component={AuthPage} />

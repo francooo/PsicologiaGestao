@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import Sidebar from "@/components/sidebar";
 import MobileNav from "@/components/mobile-nav";
@@ -55,7 +55,7 @@ import { ptBR } from "date-fns/locale";
 
 export default function CashFlow() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const [dateRange, setDateRange] = useState<{startDate: string, endDate: string}>(() => {
     const today = new Date();
     const startDate = startOfMonth(today);

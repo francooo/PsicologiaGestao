@@ -59,7 +59,8 @@ import {
   Calendar, 
   CreditCard, 
   User, 
-  DollarSign 
+  DollarSign,
+  BarChart3
 } from "lucide-react";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -352,7 +353,15 @@ export default function Financial() {
               <h1 className="text-2xl font-bold text-neutral-darkest">Financeiro</h1>
               <p className="text-neutral-dark">Gestão financeira do consultório</p>
             </div>
-            <div className="flex mt-4 md:mt-0 space-x-2">
+            <div className="flex flex-wrap mt-4 md:mt-0 gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = '/cash-flow'}
+                className="flex items-center"
+              >
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Fluxo de Caixa Detalhado
+              </Button>
               <Dialog open={isNewIncomeDialogOpen} onOpenChange={setIsNewIncomeDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="bg-success hover:bg-success/80 flex items-center">
