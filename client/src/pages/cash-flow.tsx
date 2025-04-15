@@ -13,6 +13,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Table,
@@ -29,6 +30,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   BarChart,
   Bar,
@@ -51,7 +61,8 @@ import {
   ArrowDown, 
   Calendar, 
   Plus,
-  BarChart3
+  BarChart3,
+  X
 } from "lucide-react";
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -71,6 +82,14 @@ export default function CashFlow() {
   });
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState<boolean>(false);
+  const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
+  const [transactionForm, setTransactionForm] = useState({
+    date: format(new Date(), 'yyyy-MM-dd'),
+    description: '',
+    category: '',
+    amount: '',
+  });
 
   // Fetch transactions with date range
   const { 
@@ -288,6 +307,84 @@ export default function CashFlow() {
     return format(new Date(dateString), 'dd/MM/yyyy');
   };
 
+  // Handler functions for transaction form
+  const handleTransactionFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setTransactionForm({
+      ...transactionForm,
+      [name]: name === 'amount' ? value.replace(/[^0-9.,]/g, '') : value,
+    });
+  };
+
+  const handleAddTransaction = async () => {
+    // Validação básica
+    if (!transactionForm.description || !transactionForm.category || !transactionForm.amount || !transactionForm.date) {
+      toast({
+        title: "Formulário incompleto",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Prepare payload (convertendo para o formato correto)
+      const amount = parseFloat(transactionForm.amount.replace(',', '.'));
+      
+      if (isNaN(amount) || amount <= 0) {
+        toast({
+          title: "Valor inválido",
+          description: "Por favor, informe um valor válido maior que zero.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const payload = {
+        ...transactionForm,
+        amount,
+        type: transactionType,
+      };
+
+      // Enviar para API
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        // Atualiza a lista de transações
+        queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+        
+        // Resetar form e fechar modal
+        setTransactionForm({
+          date: format(new Date(), 'yyyy-MM-dd'),
+          description: '',
+          category: '',
+          amount: '',
+        });
+        setIsAddTransactionOpen(false);
+        
+        toast({
+          title: "Sucesso!",
+          description: `${transactionType === 'income' ? 'Receita' : 'Despesa'} registrada com sucesso.`,
+          variant: "default"
+        });
+      } else {
+        throw new Error("Falha ao registrar transação");
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Falha ao registrar a transação. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+  
   // For category pie charts
   // Mapeamento de cores por categoria para melhor consistência visual
   const categoryColors: Record<string, string> = {
@@ -366,6 +463,22 @@ export default function CashFlow() {
               <p className="text-neutral-dark">Análise detalhada das receitas e despesas</p>
             </div>
             <div className="flex flex-wrap mt-4 md:mt-0 gap-2">
+              <Button variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => {
+                  // Abrir modal para adicionar nova entrada (receita)
+                  setIsAddTransactionOpen(true);
+                  setTransactionType('income');
+              }}>
+                <ArrowDown className="mr-2 h-4 w-4" />
+                Registrar Entrada
+              </Button>
+              <Button variant="default" className="bg-red-600 hover:bg-red-700" onClick={() => {
+                  // Abrir modal para adicionar nova saída (despesa)
+                  setIsAddTransactionOpen(true);
+                  setTransactionType('expense');
+              }}>
+                <ArrowUp className="mr-2 h-4 w-4" />
+                Registrar Saída
+              </Button>
               <Button variant="outline" onClick={() => navigate("/financial")}>
                 <BarChart3 className="mr-2 h-4 w-4" />
                 Voltar ao Financeiro
@@ -809,6 +922,108 @@ export default function CashFlow() {
             </CardContent>
           </Card>
         </main>
+
+        {/* Modal para adicionar nova transação */}
+        <Dialog open={isAddTransactionOpen} onOpenChange={setIsAddTransactionOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {transactionType === 'income' 
+                  ? 'Registrar Nova Entrada' 
+                  : 'Registrar Nova Saída'}
+              </DialogTitle>
+              <DialogDescription>
+                Preencha os dados da {transactionType === 'income' ? 'receita' : 'despesa'} abaixo.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="date" className="text-right">
+                  Data
+                </Label>
+                <Input
+                  id="date"
+                  name="date"
+                  type="date"
+                  value={transactionForm.date}
+                  onChange={handleTransactionFormChange}
+                  className="col-span-3"
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="description" className="text-right">
+                  Descrição
+                </Label>
+                <Input
+                  id="description"
+                  name="description"
+                  placeholder="Descrição da transação"
+                  value={transactionForm.description}
+                  onChange={handleTransactionFormChange}
+                  className="col-span-3"
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="category" className="text-right">
+                  Categoria
+                </Label>
+                <Select 
+                  name="category" 
+                  value={transactionForm.category}
+                  onValueChange={(value) => setTransactionForm({...transactionForm, category: value})}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {transactionType === 'income' ? (
+                      incomeCategories.map(category => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      expenseCategories.map(category => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="amount" className="text-right">
+                  Valor (R$)
+                </Label>
+                <Input
+                  id="amount"
+                  name="amount"
+                  placeholder="0,00"
+                  value={transactionForm.amount}
+                  onChange={handleTransactionFormChange}
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddTransactionOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleAddTransaction}
+                className={transactionType === 'income' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+              >
+                {transactionType === 'income' ? 'Registrar Entrada' : 'Registrar Saída'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
