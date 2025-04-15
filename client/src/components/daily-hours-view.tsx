@@ -120,6 +120,19 @@ export default function DailyHoursView({
         <CardTitle className="text-lg flex items-center justify-between">
           <span>Horários para {formatDate(date)}</span>
         </CardTitle>
+        
+        {/* Legenda de status */}
+        <div className="flex flex-wrap gap-3 mt-2 text-xs">
+          <Badge className="bg-orange-100 text-orange-800">
+            Solicitação via WhatsApp
+          </Badge>
+          <Badge className="bg-green-100 text-green-800">
+            Confirmado
+          </Badge>
+          <Badge className="bg-amber-100 text-amber-800">
+            1ª Sessão
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

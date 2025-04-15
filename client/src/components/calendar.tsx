@@ -146,8 +146,13 @@ export default function Calendar({
     return eventsByDate[dateKey] || [];
   };
 
-  // Get color class for a psychologist
-  const getColorClass = (psychologistId: number) => {
+  // Get color class for a psychologist or based on status
+  const getColorClass = (psychologistId: number, status?: string) => {
+    // Prioridade para agendamentos via WhatsApp (pending-confirmation)
+    if (status === 'pending-confirmation') {
+      return 'calendar-event-pending';
+    }
+    
     if (colorMap[psychologistId]) {
       return colorMap[psychologistId];
     }
@@ -198,6 +203,14 @@ export default function Calendar({
         </div>
       </div>
       
+      {/* Legenda para status de agendamentos */}
+      <div className="flex flex-wrap gap-4 mb-4 ml-1 text-xs text-neutral-dark">
+        <div className="flex items-center">
+          <div className="w-3 h-3 mr-1 rounded bg-orange-500 bg-opacity-20 border-l-2 border-orange-500"></div>
+          <span>Aguardando confirmação (WhatsApp)</span>
+        </div>
+      </div>
+      
       <div className="grid grid-cols-7 gap-px bg-neutral-light rounded-lg overflow-hidden">
         {/* Calendar headers */}
         {daysOfWeek.map((day, index) => (
@@ -233,7 +246,7 @@ export default function Calendar({
                   key={event.id}
                   className={cn(
                     "calendar-event p-1 mb-1 truncate",
-                    event.colorClass || getColorClass(event.psychologistId)
+                    event.colorClass || getColorClass(event.psychologistId, event.status)
                   )}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -273,6 +286,10 @@ export default function Calendar({
         .calendar-event-psych3 {
           background-color: rgba(248, 180, 0, 0.2);
           border-left: 3px solid #F8B400;
+        }
+        .calendar-event-pending {
+          background-color: rgba(249, 115, 22, 0.2);
+          border-left: 3px solid #f97316;
         }
       `}</style>
     </div>
