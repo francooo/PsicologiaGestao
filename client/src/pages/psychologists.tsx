@@ -90,6 +90,21 @@ const psychologistFormSchema = z
       message: "Selecione um usuário existente",
       path: ["existingUserId"],
     }
+  )
+  .refine(
+    (data) => {
+      // Se não estiver usando usuário existente, verificar se os campos de usuário estão preenchidos
+      if (!data.useExistingUser) {
+        return !!data.username && !!data.password;
+      }
+      
+      // Se estiver usando usuário existente, não precisa verificar esses campos
+      return true;
+    },
+    {
+      message: "Nome de usuário e senha são obrigatórios ao criar um novo usuário",
+      path: ["username"],
+    }
   );
 
 type PsychologistFormValues = z.infer<typeof psychologistFormSchema>;
@@ -269,7 +284,15 @@ export default function Psychologists() {
               <p className="text-neutral-dark">Gerenciamento de profissionais</p>
             </div>
             <div className="flex mt-4 md:mt-0">
-              <Dialog open={isNewPsychologistDialogOpen} onOpenChange={setIsNewPsychologistDialogOpen}>
+              <Dialog 
+                open={isNewPsychologistDialogOpen} 
+                onOpenChange={(open) => {
+                  setIsNewPsychologistDialogOpen(open);
+                  if (!open) {
+                    psychologistForm.reset();
+                    setUseExistingUser(false);
+                  }
+                }}>
                 <DialogTrigger asChild>
                   <Button className="flex items-center">
                     <Plus className="mr-2 h-4 w-4" />
