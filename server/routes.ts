@@ -1093,6 +1093,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para agendamento rápido via WhatsApp
+  app.post("/api/appointments/quick-book", async (req, res) => {
+    try {
+      const appointmentData = req.body;
+      
+      // Validar dados básicos
+      if (!appointmentData.date || !appointmentData.startTime || !appointmentData.endTime || 
+          !appointmentData.patientName || !appointmentData.psychologistId) {
+        return res.status(400).json({ message: "Dados incompletos para agendamento" });
+      }
+      
+      // Adicionar status especial para agendamentos via WhatsApp
+      const newAppointment = await storage.createAppointment({
+        ...appointmentData,
+        status: "pending-confirmation", // Status especial para agendamentos via WhatsApp
+      });
+      
+      res.status(201).json(newAppointment);
+    } catch (error) {
+      console.error("Erro no agendamento rápido:", error);
+      res.status(500).json({ message: "Erro ao processar agendamento" });
+    }
+  });
+
   // WhatsApp Integration
   app.post("/api/whatsapp/share-availability", async (req, res) => {
     try {
@@ -1170,7 +1194,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 function calculateAvailableSlots(
   startDate: Date,
   endDate: Date,
-  appointments: any[]
+  appointments: any[],
+  psychologist?: any
 ): { date: string, slots: string[] }[] {
   const availableTimes: { date: string, slots: string[] }[] = [];
   const workingHours = {
@@ -1285,7 +1310,8 @@ function formatWhatsAppMessage(
         const encodedPsychologistId = encodeURIComponent(psychologistId.toString());
         
         // Criar o link para o agendamento rápido
-        const bookingLink = `https://${process.env.REPL_SLUG}.replit.app/quick-booking?date=${encodedDate}&time=${encodedTime}&psychologist=${encodedPsychologistId}`;
+        const baseUrl = process.env.BASE_URL || "https://management-consultancy-psi.replit.app";
+        const bookingLink = `${baseUrl}/quick-booking?date=${encodedDate}&time=${encodedTime}&psychologist=${encodedPsychologistId}`;
         
         message += `- ${slot} 👉 [Agendar](${bookingLink})\n`;
       });
