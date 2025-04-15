@@ -497,30 +497,51 @@ export default function Rooms() {
                             p => p.user?.username === user?.username
                           );
 
-                          // Se encontrou e não há valor definido, define o valor do campo
+                          // Se o psicólogo logado foi encontrado e não há valor definido, define o valor do campo
                           if (loggedPsychologist && !field.value) {
                             setTimeout(() => {
                               field.onChange(loggedPsychologist.id.toString());
                             }, 0);
                           }
+                          
+                          // Se não há psicólogos no sistema mas o usuário é um psicólogo,
+                          // vamos mostrar uma mensagem informativa
+                          if ((!psychologists || psychologists.length === 0) && user?.role === 'psychologist') {
+                            console.log("Nenhum registro de psicólogo encontrado para o usuário atual.");
+                          }
 
-                          // Se o usuário for um psicólogo, mostramos apenas o nome dele
-                          if (user?.role === 'psychologist' && loggedPsychologist) {
-                            return (
-                              <FormItem>
-                                <FormLabel>Psicóloga</FormLabel>
-                                <div className="flex items-center border rounded-md p-2 bg-neutral-50">
-                                  <SquareUser className="mr-2 h-4 w-4 text-neutral-500" />
-                                  <span>{loggedPsychologist.user?.fullName || user.fullName}</span>
-                                  <input 
-                                    type="hidden" 
-                                    name="psychologistId" 
-                                    value={loggedPsychologist.id.toString()} 
-                                  />
-                                </div>
-                                <FormMessage />
-                              </FormItem>
-                            );
+                          // Se o usuário for um psicólogo
+                          if (user?.role === 'psychologist') {
+                            if (loggedPsychologist) {
+                              // Se tiver um registro de psicólogo, mostramos o nome dele
+                              return (
+                                <FormItem>
+                                  <FormLabel>Psicóloga</FormLabel>
+                                  <div className="flex items-center border rounded-md p-2 bg-neutral-50">
+                                    <SquareUser className="mr-2 h-4 w-4 text-neutral-500" />
+                                    <span>{loggedPsychologist.user?.fullName || user.fullName}</span>
+                                    <input 
+                                      type="hidden" 
+                                      name="psychologistId" 
+                                      value={loggedPsychologist.id.toString()} 
+                                    />
+                                  </div>
+                                  <FormMessage />
+                                </FormItem>
+                              );
+                            } else {
+                              // Se for psicólogo mas não tiver registro ainda, mostramos uma mensagem
+                              return (
+                                <FormItem>
+                                  <FormLabel>Psicóloga</FormLabel>
+                                  <div className="text-amber-600 border border-amber-300 rounded-md p-3 bg-amber-50">
+                                    <p>Para fazer reservas, seu registro de psicólogo precisa ser configurado.</p>
+                                    <p className="text-sm mt-1">Entre em contato com o administrador do sistema.</p>
+                                  </div>
+                                  <FormMessage />
+                                </FormItem>
+                              );
+                            }
                           }
 
                           // Filtramos os psicólogos para não mostrar o usuário logado se for admin reservando para outros
