@@ -491,32 +491,30 @@ export default function Rooms() {
                       <FormField
                         control={bookingForm.control}
                         name="psychologistId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Psicóloga</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                            >
+                        render={({ field }) => {
+                          // Encontrar o psicólogo correspondente ao usuário logado
+                          const loggedPsychologist = psychologists?.find(
+                            p => p.user.username === user?.username
+                          );
+
+                          // Se encontrou, define o valor do campo
+                          if (loggedPsychologist) {
+                            field.onChange(loggedPsychologist.id.toString());
+                          }
+
+                          return (
+                            <FormItem>
+                              <FormLabel>Psicóloga</FormLabel>
                               <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione uma psicóloga" />
-                                </SelectTrigger>
+                                <Input 
+                                  value={loggedPsychologist?.user.fullName || 'Não encontrado'} 
+                                  disabled
+                                />
                               </FormControl>
-                              <SelectContent>
-                                {psychologists?.map((psychologist) => (
-                                  <SelectItem 
-                                    key={psychologist.id} 
-                                    value={psychologist.id.toString()}
-                                  >
-                                    {psychologist.user.fullName}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
                       />
                       
                       <div className="grid grid-cols-3 gap-4">
