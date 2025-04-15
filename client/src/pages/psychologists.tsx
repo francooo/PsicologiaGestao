@@ -56,6 +56,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Loader2, Plus, Pencil, Trash2, UserCog, User } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Psychologist form schema
 const psychologistFormSchema = z.object({
