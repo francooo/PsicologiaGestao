@@ -278,22 +278,35 @@ export default function Financial() {
     const chartData = [];
     const today = new Date();
     
+    // Para cada mês no período selecionado
     for (let i = monthsBack - 1; i >= 0; i--) {
       const month = subMonths(today, i);
       const monthName = format(month, 'MMM', { locale: ptBR });
       
-      // In a real app, this would query the database for monthly totals
-      // For now, we'll generate some sample data that looks realistic
-      const baseIncome = 25000 + Math.random() * 5000;
-      const baseExpense = 8000 + Math.random() * 1000;
+      // Inicializa valores zerados
+      let income = 0;
+      let expenses = 0;
       
-      // Make income increase slightly over time
-      const incomeMultiplier = 1 + (monthsBack - i) * 0.02;
-      const income = Math.round(baseIncome * incomeMultiplier);
-      
-      // Make expenses increase slightly less than income
-      const expenseMultiplier = 1 + (monthsBack - i) * 0.01;
-      const expenses = Math.round(baseExpense * expenseMultiplier);
+      // Se temos transações, calcular totais por mês
+      if (transactions && transactions.length > 0) {
+        const monthStart = startOfMonth(month);
+        const monthEnd = endOfMonth(month);
+        
+        // Filtra transações por mês
+        const monthTransactions = transactions.filter(t => {
+          const transactionDate = new Date(t.date);
+          return transactionDate >= monthStart && transactionDate <= monthEnd;
+        });
+        
+        // Calcula receitas e despesas
+        income = monthTransactions
+          .filter(t => t.type === 'income')
+          .reduce((sum, t) => sum + Number(t.amount), 0);
+          
+        expenses = monthTransactions
+          .filter(t => t.type === 'expense')
+          .reduce((sum, t) => sum + Number(t.amount), 0);
+      }
       
       chartData.push({
         month: monthName,

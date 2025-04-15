@@ -9,6 +9,7 @@ import Appointments from "@/pages/appointments";
 import Psychologists from "@/pages/psychologists";
 import Rooms from "@/pages/rooms";
 import Financial from "@/pages/financial";
+import CashFlow from "@/pages/cash-flow";
 import Permissions from "@/pages/permissions";
 import Profile from "@/pages/profile";
 import { ProtectedRoute } from "./lib/protected-route";
