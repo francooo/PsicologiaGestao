@@ -40,6 +40,11 @@ export const insertPsychologistSchema = createInsertSchema(psychologists).pick({
   specialization: true,
   bio: true,
   hourlyRate: true,
+}).extend({
+  hourlyRate: z.union([
+    z.string().transform((val) => parseFloat(val)),
+    z.number()
+  ])
 });
 
 // Rooms
