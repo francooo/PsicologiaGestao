@@ -111,6 +111,11 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   date: true,
   responsibleId: true,
   relatedAppointmentId: true,
+}).extend({
+  amount: z.union([
+    z.string().transform((val) => parseFloat(val)),
+    z.number()
+  ])
 });
 
 // Room bookings
