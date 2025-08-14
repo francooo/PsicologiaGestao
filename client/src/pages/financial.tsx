@@ -378,7 +378,8 @@ export default function Financial() {
                     Nova Receita
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-h-[90vh] max-w-lg w-full overflow-y-auto sm:max-w-md"
+                  style={{ paddingBottom: '1.5rem' }}>
                   <DialogHeader>
                     <DialogTitle>Nova Receita</DialogTitle>
                     <DialogDescription>
@@ -491,19 +492,20 @@ export default function Financial() {
                         />
                       </div>
                       
-                      <DialogFooter>
+                      <DialogFooter className="mt-6 pt-4 border-t">
                         <Button 
                           type="submit" 
-                          className="bg-success hover:bg-success/80" 
+                          className="bg-green-600 hover:bg-green-700 w-full"
                           disabled={createTransactionMutation.isPending}
+                          size="lg"
                         >
                           {createTransactionMutation.isPending ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Registrando...
+                              Salvando...
                             </>
                           ) : (
-                            "Registrar Receita"
+                            "Salvar Receita"
                           )}
                         </Button>
                       </DialogFooter>
@@ -522,7 +524,8 @@ export default function Financial() {
                     Nova Despesa
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-h-[90vh] max-w-lg w-full overflow-y-auto sm:max-w-md"
+                  style={{ paddingBottom: '1.5rem' }}>
                   <DialogHeader>
                     <DialogTitle>Nova Despesa</DialogTitle>
                     <DialogDescription>
@@ -635,19 +638,20 @@ export default function Financial() {
                         />
                       </div>
                       
-                      <DialogFooter>
+                      <DialogFooter className="mt-6 pt-4 border-t">
                         <Button 
                           type="submit" 
-                          className="bg-error hover:bg-error/80" 
+                          className="bg-red-600 hover:bg-red-700 w-full"
                           disabled={createTransactionMutation.isPending}
+                          size="lg"
                         >
                           {createTransactionMutation.isPending ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Registrando...
+                              Salvando...
                             </>
                           ) : (
-                            "Registrar Despesa"
+                            "Salvar Despesa"
                           )}
                         </Button>
                       </DialogFooter>
