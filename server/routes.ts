@@ -474,6 +474,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Financial transactions routes
   app.get("/api/transactions", async (req, res) => {
     try {
+      // Verificar se o usuário está autenticado
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const user = req.user;
       let transactions;
       
       if (req.query.type) {
@@ -485,6 +491,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       } else {
         transactions = await storage.getAllTransactions();
+      }
+      
+      // Filtrar transações do usuário autenticado (a menos que seja admin)
+      if (user.role !== 'admin') {
+        transactions = transactions.filter(transaction => transaction.responsibleId === user.id);
       }
       
       // Get user info for responsible party
@@ -518,9 +529,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/transactions/:id", async (req, res) => {
     try {
+      // Verificar se o usuário está autenticado
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const user = req.user;
       const transaction = await storage.getTransaction(parseInt(req.params.id));
+      
       if (!transaction) {
         return res.status(404).json({ message: "Transaction not found" });
+      }
+
+      // Verificar se o usuário é responsável pela transação ou é admin
+      if (transaction.responsibleId !== user.id && user.role !== 'admin') {
+        return res.status(403).json({ message: "Forbidden: You can only view your own transactions" });
       }
       
       const responsible = await storage.getUser(transaction.responsibleId);
@@ -547,7 +570,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/transactions", async (req, res) => {
     try {
-      const data = insertTransactionSchema.parse(req.body);
+      // Verificar se o usuário está autenticado
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const user = req.user;
+      
+      // Adicionar o responsibleId automaticamente
+      const data = insertTransactionSchema.parse({
+        ...req.body,
+        responsibleId: user.id
+      });
+      
       const transaction = await storage.createTransaction(data);
       res.status(201).json(transaction);
     } catch (error) {
@@ -560,11 +595,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/transactions/:id", async (req, res) => {
     try {
+      // Verificar se o usuário está autenticado
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
       const id = parseInt(req.params.id);
-      const updatedTransaction = await storage.updateTransaction(id, req.body);
-      if (!updatedTransaction) {
+      const existingTransaction = await storage.getTransaction(id);
+      
+      if (!existingTransaction) {
         return res.status(404).json({ message: "Transaction not found" });
       }
+
+      // Verificar se o usuário é responsável pela transação ou é admin
+      if (existingTransaction.responsibleId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Forbidden: You can only update your own transactions" });
+      }
+
+      const updatedTransaction = await storage.updateTransaction(id, req.body);
       res.json(updatedTransaction);
     } catch (error) {
       res.status(500).json({ message: "Error updating transaction" });
@@ -573,11 +621,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/transactions/:id", async (req, res) => {
     try {
+      // Verificar se o usuário está autenticado
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
       const id = parseInt(req.params.id);
-      const result = await storage.deleteTransaction(id);
-      if (!result) {
+      const existingTransaction = await storage.getTransaction(id);
+      
+      if (!existingTransaction) {
         return res.status(404).json({ message: "Transaction not found" });
       }
+
+      // Verificar se o usuário é responsável pela transação ou é admin
+      if (existingTransaction.responsibleId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Forbidden: You can only delete your own transactions" });
+      }
+
+      const result = await storage.deleteTransaction(id);
       res.sendStatus(204);
     } catch (error) {
       res.status(500).json({ message: "Error deleting transaction" });

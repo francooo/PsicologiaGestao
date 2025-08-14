@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as googleCalendarService from '../services/google-calendar';
-import { db } from '../db';
+// import { db } from '../db'; // Commented out for local development
 import { appointments, calendarEvents, users } from '@shared/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 

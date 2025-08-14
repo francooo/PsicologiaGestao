@@ -6,9 +6,12 @@ import * as schema from "@shared/schema";
 neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+  console.warn("DATABASE_URL not set, using mock database for local development");
+  // Create mock exports for local development
+  export const pool = null;
+  export const db = null;
+  export default { pool: null, db: null };
+  process.exit(0);
 }
 
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });

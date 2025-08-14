@@ -1,6 +1,6 @@
 import { google, calendar_v3 } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
-import { db } from '../db';
+// import { db } from '../db'; // Commented out for local development
 import { googleTokens, calendarEvents, appointments } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 

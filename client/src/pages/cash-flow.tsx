@@ -319,6 +319,7 @@ export default function CashFlow() {
   const handleAddTransaction = async () => {
     // Validação básica
     if (!transactionForm.description || !transactionForm.category || !transactionForm.amount || !transactionForm.date) {
+      console.log('Formulário incompleto:', transactionForm);
       toast({
         title: "Formulário incompleto",
         description: "Por favor, preencha todos os campos.",
@@ -346,6 +347,8 @@ export default function CashFlow() {
         type: transactionType,
       };
 
+      console.log('Enviando payload:', payload);
+
       // Enviar para API
       const res = await fetch('/api/transactions', {
         method: 'POST',
@@ -355,7 +358,12 @@ export default function CashFlow() {
         body: JSON.stringify(payload)
       });
 
+      console.log('Resposta da API:', res.status, res.statusText);
+
       if (res.ok) {
+        const responseData = await res.json();
+        console.log('Transação criada:', responseData);
+        
         // Atualiza a lista de transações
         queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
         
@@ -374,12 +382,15 @@ export default function CashFlow() {
           variant: "default"
         });
       } else {
-        throw new Error("Falha ao registrar transação");
+        const errorData = await res.json();
+        console.error('Erro da API:', errorData);
+        throw new Error(errorData.message || "Falha ao registrar transação");
       }
     } catch (error) {
+      console.error('Erro ao adicionar transação:', error);
       toast({
         title: "Erro",
-        description: "Falha ao registrar a transação. Tente novamente.",
+        description: error instanceof Error ? error.message : "Falha ao registrar a transação. Tente novamente.",
         variant: "destructive"
       });
     }

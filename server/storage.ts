@@ -11,7 +11,7 @@ import {
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import connectPg from "connect-pg-simple";
-import { db, pool } from "./db";
+// import { db, pool } from "./db"; // Commented out for local development
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
@@ -491,9 +491,9 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({
-      pool,
-      createTableIfMissing: true
+    // Use memory store for local development
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
     });
 
     // Inicialização adiada de dados padrão para evitar erros de tabela não existente
@@ -884,5 +884,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Use database storage instead of memory storage
-export const storage = new DatabaseStorage();
+// Use memory storage for local development
+export const storage = new MemStorage();
