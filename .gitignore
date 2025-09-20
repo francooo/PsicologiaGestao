@@ -4,3 +4,8 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Development files
+dev-tokens.json
+uploads/*
+!uploads/.gitkeep
