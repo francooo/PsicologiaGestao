@@ -138,7 +138,7 @@ export default function AuthPage() {
                       )}
                     />
                     <div className="text-right mb-4">
-                      <a href="/recover-password" className="text-primary hover:underline text-sm">
+                      <a href="/password-recovery" className="text-primary hover:underline text-sm">
                         Esqueceu sua senha?
                       </a>
                     </div>

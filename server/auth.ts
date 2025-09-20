@@ -21,6 +21,8 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
+export { hashPassword };
+
 async function comparePasswords(supplied: string, stored: string) {
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
@@ -106,8 +108,7 @@ export function setupAuth(app: Express) {
       }
 
       // Clean up sensitive info before returning
-      const userResponse = { ...user };
-      delete userResponse.password;
+      const { password, ...userResponse } = user;
 
       req.login(user, (err) => {
         if (err) return next(err);
@@ -119,7 +120,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) return next(err);
       if (!user) {
         return res.status(401).json({ message: info?.message || "Authentication failed" });
@@ -129,8 +130,7 @@ export function setupAuth(app: Express) {
         if (loginErr) return next(loginErr);
         
         // Clean up sensitive info before returning
-        const userResponse = { ...user };
-        delete userResponse.password;
+        const { password, ...userResponse } = user;
         
         res.status(200).json(userResponse);
       });
@@ -148,8 +148,7 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     // Clean up sensitive info before returning
-    const userResponse = { ...req.user };
-    delete userResponse.password;
+    const { password, ...userResponse } = req.user as any;
     
     res.json(userResponse);
   });

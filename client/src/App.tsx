@@ -13,9 +13,10 @@ import CashFlow from "@/pages/cash-flow";
 import Permissions from "@/pages/permissions";
 import Profile from "@/pages/profile";
 import QuickBooking from "@/pages/quick-booking";
+import PasswordRecovery from "@/pages/password-recovery";
+import ResetPassword from "@/pages/reset-password";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
-import PasswordRecovery from "./pages/password-recovery";
 
 function Router() {
   return (
@@ -30,7 +31,9 @@ function Router() {
       <ProtectedRoute path="/permissions" component={Permissions} />
       <ProtectedRoute path="/profile" component={Profile} />
       <Route path="/auth" component={AuthPage} />
-      <Route path="/recover-password" component={PasswordRecovery} />
+      <Route path="/auth-page" component={AuthPage} />
+      <Route path="/password-recovery" component={PasswordRecovery} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/quick-booking" component={QuickBooking} />
       <Route component={NotFound} />
     </Switch>

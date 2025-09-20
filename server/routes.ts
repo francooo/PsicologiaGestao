@@ -1,6 +1,6 @@
 import express, { type Express, type Request } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { insertAppointmentSchema, insertRoomSchema, insertPsychologistSchema, insertTransactionSchema, insertRoomBookingSchema, insertPermissionSchema, insertRolePermissionSchema } from "@shared/schema";
 import { ZodError } from "zod";
@@ -8,6 +8,8 @@ import { fromZodError } from "zod-validation-error";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
+import { sendPasswordResetEmail } from "./services/email";
 import * as WhatsAppService from "./services/whatsapp";
 import googleCalendarRoutes from "./routes/google-calendar";
 import * as GoogleCalendarService from "./services/google-calendar";
@@ -645,6 +647,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // API para gerar usuários de exemplo para testes
+  app.post("/api/users/generate-sample-data", async (req, res) => {
+    try {
+      // Hash a simple password for demo users
+      const bcrypt = require('bcrypt');
+      const hashedPassword = await bcrypt.hash('123456', 10);
+      
+      // Create sample users
+      const sampleUsers = [
+        {
+          username: 'admin',
+          password: hashedPassword,
+          email: 'admin@psicologia.com',
+          fullName: 'Administrador do Sistema',
+          role: 'admin',
+          status: 'active'
+        },
+        {
+          username: 'dra.maria',
+          password: hashedPassword,
+          email: 'maria@psicologia.com',
+          fullName: 'Dra. Maria Silva',
+          role: 'psychologist',
+          status: 'active'
+        },
+        {
+          username: 'dr.carlos',
+          password: hashedPassword,
+          email: 'carlos@psicologia.com',
+          fullName: 'Dr. Carlos Santos',
+          role: 'psychologist',
+          status: 'active'
+        },
+        {
+          username: 'ana.recep',
+          password: hashedPassword,
+          email: 'ana@psicologia.com',
+          fullName: 'Ana Oliveira',
+          role: 'receptionist',
+          status: 'active'
+        },
+        {
+          username: 'joao.psi',
+          password: hashedPassword,
+          email: 'joao@psicologia.com',
+          fullName: 'João Pereira',
+          role: 'psychologist',
+          status: 'inactive'
+        }
+      ];
+      
+      // Create users in storage
+      for (const userData of sampleUsers) {
+        try {
+          await storage.createUser(userData);
+        } catch (error) {
+          // User might already exist, continue with next
+          console.log(`User ${userData.username} may already exist, skipping...`);
+        }
+      }
+      
+      res.status(201).json({ 
+        message: "Usuários de exemplo criados com sucesso",
+        users: sampleUsers.map(u => ({ username: u.username, fullName: u.fullName, role: u.role }))
+      });
+    } catch (error) {
+      console.error('Error creating sample users:', error);
+      res.status(500).json({ message: "Erro ao gerar usuários de exemplo" });
+    }
+  });
+  
+  // API para listar usuários cadastrados (sem autenticação para debug)
+  app.get("/api/users/debug", async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      
+      // Remove passwords for security
+      const safeUsers = users.map(user => {
+        const { password, ...safeUser } = user;
+        return {
+          id: safeUser.id,
+          username: safeUser.username,
+          fullName: safeUser.fullName,
+          email: safeUser.email,
+          role: safeUser.role,
+          status: safeUser.status
+        };
+      });
+      
+      res.json({
+        total: safeUsers.length,
+        users: safeUsers
+      });
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: "Erro ao buscar usuários" });
+    }
+  });
+
   // API para gerar dados de exemplo para testes
   app.post("/api/transactions/generate-sample-data", async (req, res) => {
     try {
@@ -1038,13 +1139,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         psychologistAppointments
       );
       
-      const whatsappMessage = formatWhatsAppMessage(
+      const whatsappMessage = await formatWhatsAppMessage(
         psychologistUser.fullName,
         message || "",
         availableTimes,
         new Date(startDate),
         new Date(endDate),
-        parseInt(psychologistId)
+        parseInt(psychologistId),
+        psychologist.userId
       );
       
       // Generate WhatsApp link
@@ -1128,30 +1230,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email } = req.body;
       
-      // Buscar usuário pelo email
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({ message: "Email válido é obrigatório" });
+      }
+      
+      console.log('🔍 Verificando recuperação de senha para email:', email);
+      
+      // Buscar usuário pelo email na tabela de usuários
       const user = await storage.getUserByEmail(email);
+      
       if (!user) {
+        console.log('❌ Email não encontrado na base de dados:', email);
         // Por segurança, não informamos se o email existe ou não
         return res.status(200).json({ 
           message: "Se o email existir, você receberá as instruções de recuperação."
         });
       }
+      
+      console.log('✅ Usuário encontrado:', {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        status: user.status
+      });
+      
+      // Verificar se o usuário está ativo
+      if (user.status !== 'active') {
+        console.log('⚠️ Usuário não está ativo:', user.status);
+        // Por segurança, retornamos a mesma mensagem
+        return res.status(200).json({ 
+          message: "Se o email existir, você receberá as instruções de recuperação."
+        });
+      }
 
-      // Gerar token único
+      // Gerar token único e seguro
       const resetToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+      
+      console.log('🔐 Token gerado:', {
+        token: resetToken.substring(0, 8) + '...',
+        expiresAt: expiresAt.toISOString(),
+        userId: user.id
+      });
       
       // Salvar token no banco com expiração
-      await storage.savePasswordResetToken(user.id, resetToken);
+      await storage.savePasswordResetToken(user.id, resetToken, expiresAt);
+      console.log('💾 Token salvo no banco de dados');
       
       // Enviar email
-      await sendPasswordResetEmail(user, resetToken);
+      console.log('📧 Enviando email de recuperação...');
+      try {
+        await sendPasswordResetEmail(user, resetToken);
+        console.log('✅ Processo de recuperação concluído com sucesso');
+      } catch (emailError) {
+        console.log('⚠️  Erro no envio do email, mas token foi salvo. Verifique logs para detalhes.');
+        // Continue execution even if email fails - token is still valid
+      }
       
       res.status(200).json({ 
         message: "Se o email existir, você receberá as instruções de recuperação."
       });
     } catch (error) {
-      console.error('Error in password recovery:', error);
+      console.error('❌ Erro no processo de recuperação de senha:', error);
       res.status(500).json({ message: "Erro ao processar recuperação de senha" });
+    }
+  });
+  
+  // Reset Password - Validate token and show reset form
+  app.get("/api/reset-password/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      console.log('🔍 Validando token de reset:', {
+        token: token.substring(0, 8) + '...',
+        fullToken: token,
+        timestamp: new Date().toISOString()
+      });
+      
+      if (!token) {
+        console.log('❌ Token não fornecido');
+        return res.status(400).json({ message: "Token é obrigatório" });
+      }
+      
+      // Verificar se o token é válido
+      const resetToken = await storage.getPasswordResetToken(token);
+      
+      console.log('🗺 Token encontrado no storage:', {
+        found: !!resetToken,
+        tokenData: resetToken ? {
+          userId: resetToken.userId,
+          expiresAt: resetToken.expiresAt,
+          used: resetToken.used,
+          createdAt: resetToken.createdAt
+        } : null
+      });
+      
+      if (!resetToken) {
+        console.log('❌ Token inválido ou expirado');
+        return res.status(400).json({ 
+          message: "Token inválido ou expirado. Solicite uma nova recuperação de senha."
+        });
+      }
+      
+      console.log('✅ Token válido!');
+      // Token válido - retornar sucesso (frontend renderizará o formulário)
+      res.status(200).json({ 
+        valid: true,
+        message: "Token válido. Você pode redefinir sua senha."
+      });
+    } catch (error) {
+      console.error('❌ Error validating reset token:', error);
+      res.status(500).json({ message: "Erro ao validar token" });
+    }
+  });
+  
+  // Reset Password - Process new password
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const { token, password, confirmPassword } = req.body;
+      
+      if (!token || !password || !confirmPassword) {
+        return res.status(400).json({ 
+          message: "Token, senha e confirmação são obrigatórios" 
+        });
+      }
+      
+      if (password !== confirmPassword) {
+        return res.status(400).json({ 
+          message: "As senhas não coincidem" 
+        });
+      }
+      
+      // Validar força da senha
+      if (password.length < 6) {
+        return res.status(400).json({ 
+          message: "A senha deve ter pelo menos 6 caracteres"
+        });
+      }
+      
+      // Verificar se o token é válido
+      const resetToken = await storage.getPasswordResetToken(token);
+      
+      if (!resetToken) {
+        return res.status(400).json({ 
+          message: "Token inválido ou expirado. Solicite uma nova recuperação de senha."
+        });
+      }
+      
+      // Hash da nova senha
+      const hashedPassword = await hashPassword(password);
+      
+      // Atualizar senha no banco
+      const updated = await storage.updateUserPassword(resetToken.userId, hashedPassword);
+      
+      if (!updated) {
+        return res.status(500).json({ 
+          message: "Erro ao atualizar senha. Tente novamente."
+        });
+      }
+      
+      // Invalidar o token para evitar reutilização
+      await storage.invalidatePasswordResetToken(token);
+      
+      res.status(200).json({ 
+        message: "Sua senha foi alterada com sucesso. Agora você já pode fazer login com a nova senha."
+      });
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      res.status(500).json({ message: "Erro ao redefinir senha" });
     }
   });
 
